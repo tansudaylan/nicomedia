@@ -1,3 +1,2 @@
-# chalcedon
-
-A library for exoplanet research
+# nicomedia
+A library of numerical routines in astrophysics
