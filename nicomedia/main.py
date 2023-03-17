@@ -6,6 +6,8 @@ import astropy
 import scipy
 
 import tdpy
+from tdpy import summgene
+
 
 def quer_mast(request):
     '''
@@ -1583,11 +1585,19 @@ def retr_logg(radi, mass):
 
 def retr_noislsst(magtinpt):
     
+    if np.isscalar(magtinpt):
+        #magtinpt = np.array(magtinpt)
+        magtinpt = np.full(1, magtinpt)
+    if isinstance(magtinpt, float):
+        magtinpt = np.array(magtinpt)
+    
     nois = np.zeros_like(magtinpt) + np.inf
+    
     indx = np.where((magtinpt < 20.) & (magtinpt > 15.))
-    nois[indx] = 6.
+    nois[indx] = 6. # [ppt]
+    
     indx = np.where((magtinpt >= 20.) & (magtinpt < 24.))
-    nois[indx] = 6. * 10**((magtinpt[indx] - 20.) / 3.)
+    nois[indx] = 6. * 10**((magtinpt[indx] - 20.) / 3.) # [ppt]
     
     return nois
 
