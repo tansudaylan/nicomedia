@@ -1535,26 +1535,6 @@ def retr_rvelsema( \
     return rvelsema
 
 
-def retr_angleinscosm(masslens, distlenssour, distlens, distsour):
-    '''
-    Return Einstein radius for a cosmological source and lens.
-    '''
-    
-    angleins = np.sqrt(masslens / 10**(11.09) * distlenssour / distlens / distsour)
-    
-    return angleins
-
-
-def retr_radieinssbin(masslens, distlenssour):
-    '''
-    Return Einstein radius for a stellar lens and source in proximity.
-    '''
-    
-    radieins = 0.04273 * np.sqrt(masslens * distlenssour) # [R_S]
-    
-    return radieins
-
-
 def retr_brgtlmdk(cosg, coeflmdk, brgtraww=None, typelmdk='quad'):
     
     if brgtraww is None:
@@ -2263,25 +2243,6 @@ def retr_masscomp(amplslen, peri):
     masscomp = 1e-3 * amplslen / 7.15e-5 / gdat.radistar**(-2.) / peri**(2. / 3.) / (gdat.massstar)**(1. / 3.)
     
     return masscomp
-
-
-def retr_amplslen( \
-                  # orbital period [days]
-                  peri, \
-                  # radistar: radius of the star [Solar radius]
-                  radistar, \
-                  # mass of the companion [Solar mass]
-                  masscomp, \
-                  # mass of the star [Solar mass]
-                  massstar, \
-                 ):
-    '''
-    Calculate the self-lensing amplitude.
-    '''
-    
-    amplslen = 7.15e-5 * radistar**(-2.) * peri**(2. / 3.) * masscomp * (masscomp + massstar)**(1. / 3.) * 1e3 # [ppt]
-
-    return amplslen
 
 
 def retr_smaxkepl(peri, masstotl):
