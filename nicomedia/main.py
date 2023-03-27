@@ -91,8 +91,8 @@ def retr_dictpopltic8(typepopl, numbsyst=None, \
             'ticim060': TIC targets brighter than TESS magnitude 6.0
             'ticim100': TIC targets brighter than TESS magnitude 10.0
             'ticim140': TIC targets brighter than TESS magnitude 14.0
-            'ttarprmsffimm060': TESS targets observed during PM on FFIs brighter than mag 6.0
-            'ttarprms2min': 2-minute TESS targets obtained by merging the SPOC 2-min bulk downloads
+            'targtess_prms_ffimm060': TESS targets observed during PM on FFIs brighter than mag 6.0
+            'targtess_prms_2min': 2-minute TESS targets obtained by merging the SPOC 2-min bulk downloads
 
     Returns a dictionary with keys:
         rasc: RA
@@ -105,24 +105,25 @@ def retr_dictpopltic8(typepopl, numbsyst=None, \
     if typeverb > 0:
         print('Retrieving a dictionary of TIC8 for population %s...' % typepopl)
     
-    if typepopl.startswith('ttar'):
-        if typepopl[4:].endswith('yr01'):
+    if typepopl.startswith('targtess'):
+        strgtimetess = typepopl.split('_')[1]
+        if strgtimetess == 'yr01':
             listtsec = np.arange(1, 14) # [1-13]
-        elif typepopl[4:].endswith('yr02'):
+        elif strgtimetess == 'yr02':
             listtsec = np.arange(13, 27) # [13-26]
-        elif typepopl[4:].endswith('yr03'):
+        elif strgtimetess == 'yr03':
             listtsec = np.arange(27, 40) # [27-39]
-        elif typepopl[4:].endswith('yr04'):
+        elif strgtimetess == 'yr04':
             listtsec = np.arange(40, 56) # [40-55]
-        elif typepopl[4:].endswith('yr04'):
+        elif strgtimetess == 'yr05':
             listtsec = np.arange(56, 70) # [56-69]
-        elif 'sc01' in typepopl:
+        elif strgtimetess == 'sc01':
             listtsec = np.arange(1, 2)
-        elif 'prms' in typepopl:
+        elif strgtimetess == 'prms':
             listtsec = np.arange(1, 27)
-        elif typepopl[4:].endswith('e1ms'):
+        elif strgtimetess == 'e1ms':
             listtsec = np.arange(27, 56)
-        elif typepopl[4:].endswith('e2ms'):
+        elif strgtimetess == 'e2ms':
             listtsec = np.arange(56, 70)
         else:
             print('typepopl')
@@ -152,7 +153,7 @@ def retr_dictpopltic8(typepopl, numbsyst=None, \
         
         print('typepopl')
         print(typepopl)
-        if typepopl.startswith('ttar'):
+        if typepopl.startswith('targtess'):
             
             if typepopl[8:12] == '20sc':
                 strgurll = '_20s_'
@@ -259,8 +260,7 @@ def retr_dictpopltic8(typepopl, numbsyst=None, \
                 for k in range(len(listdictquer)):
                     dictquer[namedict][k] = listdictquer[k][name]
         else:
-            print('Unrecognized population name: %s' % typepopl)
-            raise Exception('')
+            raise Exception('Unrecognized population name: %s' % typepopl)
         
         numbtarg = dictquer['radistar'].size
             
@@ -1729,7 +1729,7 @@ def retr_dictpoplstarcomp( \
     dictfact = tdpy.retr_factconv()
     
     # get the features of the star population
-    if typepoplsyst.startswith('ttar') or typepoplsyst.startswith('tici'):
+    if typepoplsyst.startswith('targtess') or typepoplsyst.startswith('tici'):
         dictpoplstar[namepoplstartotl] = retr_dictpopltic8(typepoplsyst, numbsyst=numbsyst)
         
         print('Removing stars that do not have radii or masses...')
