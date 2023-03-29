@@ -1674,6 +1674,9 @@ def retr_dictpoplstarcomp( \
                           ## 'peri': orbital periods are sampled first and then semi-major axies are calculated
                           typesamporbtcomp='smax', \
 
+                          # minimum number of components per star
+                          minmnumbcompstar=None, \
+                          
                           # minimum ratio of semi-major axis to radius of the host star
                           minmsmaxradistar=3., \
                           
@@ -1817,7 +1820,10 @@ def retr_dictpoplstarcomp( \
         
         # number of companions per star
         dictpoplstar[namepoplstartotl]['numbcompstar'] = np.random.poisson(dictpoplstar[namepoplstartotl]['numbcompstarmean'])
-    
+        
+        if minmnumbcompstar is not None:
+            dictpoplstar[namepoplstartotl]['numbcompstar'] = np.maximum(dictpoplstar[namepoplstartotl]['numbcompstar'], minmnumbcompstar)
+
     elif typesyst == 'psyspcur' or typesyst == 'cosc' or typesyst == 'sbin':
         # number of companions per star
         dictpoplstar[namepoplstartotl]['numbcompstar'] = np.ones(dictpoplstar[namepoplstartotl]['radistar'].size).astype(int)
@@ -1982,14 +1988,40 @@ def retr_dictpoplstarcomp( \
         # initialize the total mass of the companion + moons system as the mass of the companion
         dictpoplcomp[namepoplcomptotl]['masscompmoon'] = np.copy(dictpoplcomp[namepoplcomptotl]['masscomp'])
                 
-    dictpoplcomp[namepoplcomptotl]['rsum'] = dictpoplcomp[namepoplcomptotl]['radistar']
+    rsum = dictpoplcomp[namepoplcomptotl]['radistar']
     if not boolsystcosc:
-        dictpoplcomp[namepoplcomptotl]['rsum'] += dictpoplcomp[namepoplcomptotl]['radicomp'] / dictfact['rsre']    
-    dictpoplcomp[namepoplcomptotl]['rsmacomp'] = dictpoplcomp[namepoplcomptotl]['rsum'] / dictpoplcomp[namepoplcomptotl]['smaxcomp'] / dictfact['aurs']
+        rsum += dictpoplcomp[namepoplcomptotl]['radicomp'] / dictfact['rsre']    
+    dictpoplcomp[namepoplcomptotl]['rsmacomp'] = rsum / dictpoplcomp[namepoplcomptotl]['smaxcomp'] / dictfact['aurs']
     
     # orbital inclinations of the companions
     dictpoplcomp[namepoplcomptotl]['inclcomp'] = 180. / np.pi * np.arccos(dictpoplcomp[namepoplcomptotl]['cosicomp'])
     
+    if typesyst == 'psys':
+        
+        if booldiag:
+            
+            if not np.isfinite(dictpoplcomp[namepoplcomptotl]['radistar']).all():
+                print('')
+                print('')
+                print('')
+                raise Exception('not np.isfinite(dictpoplcomp[namepoplcomptotl][radistar]).all()')
+            
+            if not np.isfinite(dictpoplcomp[namepoplcomptotl]['radicomp']).all():
+                print('')
+                print('')
+                print('')
+                raise Exception('not np.isfinite(dictpoplcomp[namepoplcomptotl][radicomp]).all()')
+
+        # radius ratio
+        dictpoplcomp[namepoplcomptotl]['rratcomp'] = dictpoplcomp[namepoplcomptotl]['radicomp'] / dictpoplcomp[namepoplcomptotl]['radistar'] / dictfact['rsre']
+        
+        if booldiag:
+            if not np.isfinite(dictpoplcomp[namepoplcomptotl]['rratcomp']).all():
+                print('')
+                print('')
+                print('')
+                raise Exception('not np.isfinite(dictpoplcomp[namepoplcomptotl][rratcomp]).all()')
+            
     # Boolean flag indicating whether a companion is transiting
     dictpoplcomp[namepoplcomptotl]['booltran'] = dictpoplcomp[namepoplcomptotl]['rsmacomp'] > dictpoplcomp[namepoplcomptotl]['cosicomp']
 
@@ -2003,20 +2035,19 @@ def retr_dictpoplstarcomp( \
                                                                    dictpoplcomp[namepoplcomptran]['cosicomp'])
     dictpoplcomp[namepoplcomptran]['dcyc'] = dictpoplcomp[namepoplcomptran]['duratrantotl'] / dictpoplcomp[namepoplcomptran]['pericomp'] / 24.
     
-    if typesyst == 'psys':
-        # radius ratio
-        dictpoplcomp[namepoplcomptran]['rratcomp'] = dictpoplcomp[namepoplcomptran]['radicomp'] / dictpoplcomp[namepoplcomptran]['radistar'] / dictfact['rsre']
-        # transit depth
-        dictpoplcomp[namepoplcomptran]['depttrancomp'] = 1e3 * dictpoplcomp[namepoplcomptran]['rratcomp']**2 # [ppt]
     if boolsystcosc:
         # amplitude of self-lensing
         dictpoplcomp[namepoplcomptran]['amplslen'] = retr_amplslen(dictpoplcomp[namepoplcomptran]['pericomp'], dictpoplcomp[namepoplcomptran]['radistar'], \
                                                                             dictpoplcomp[namepoplcomptran]['masscomp'], dictpoplcomp[namepoplcomptran]['massstar'])
     
-    # define for all samples those features that are valid only for transiting systems
+    if typesyst == 'psys':
+        # transit depth
+        dictpoplcomp[namepoplcomptran]['depttrancomp'] = 1e3 * dictpoplcomp[namepoplcomptran]['rratcomp']**2 # [ppt]
+    
+    # define parent population's features that are valid only for transiting systems
     listtemp = ['duratrantotl', 'dcyc']
     if typesyst == 'psys':
-        listtemp += ['rratcomp', 'depttrancomp']
+        listtemp += ['depttrancomp']
     if boolsystcosc:
         listtemp += ['amplslen']
     for strg in listtemp:
