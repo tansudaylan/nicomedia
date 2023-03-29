@@ -1,4 +1,4 @@
-import os
+import os, sys, json
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -74,13 +74,17 @@ def xmat_tici(listtici):
     return dictquer
 
 
-def retr_dictpopltic8(typepopl, numbsyst=None, \
+def retr_dictpopltic8( \
+                      typepopl, \
+                      numbsyst=None, \
                       # type of verbosity
                       ## -1: absolutely no text
                       ##  0: no text output except critical warnings
                       ##  1: minimal description of the execution
                       ##  2: detailed description of the execution
                       typeverb=1, \
+                      # Boolean flag to turn on diagnostic mode
+                      booldiag=True, \
                      ):
     '''
     Get a dictionary of the sources in the TIC8 with the fields in the TIC8.
@@ -106,7 +110,18 @@ def retr_dictpopltic8(typepopl, numbsyst=None, \
         print('Retrieving a dictionary of TIC8 for population %s...' % typepopl)
     
     if typepopl.startswith('targtess'):
-        strgtimetess = typepopl.split('_')[1]
+        strgtypepoplsplt = typepopl.split('_')
+        
+        if booldiag:
+            if len(strgtypepoplsplt) < 2:
+                print('')
+                print('')
+                print('')
+                print('typepopl')
+                print(typepopl)
+                raise Exception('len(strgtypepoplsplt) == 0')
+        
+        strgtimetess = strgtypepoplsplt[1]
         if strgtimetess == 'yr01':
             listtsec = np.arange(1, 14) # [1-13]
         elif strgtimetess == 'yr02':
@@ -155,17 +170,18 @@ def retr_dictpopltic8(typepopl, numbsyst=None, \
         print(typepopl)
         if typepopl.startswith('targtess'):
             
-            if typepopl[8:12] == '20sc':
+            if strgtypepoplsplt[2] == '20sc':
                 strgurll = '_20s_'
                 labltemp = '20-second'
-            elif typepopl[8:12] == '2min':
+            elif strgtypepoplsplt[2] == '2min':
                 strgurll = '_'
                 labltemp = '2-minute'
             else:
+                print('')
+                print('')
+                print('')
                 print('typepopl')
                 print(typepopl)
-                print('typepopl[8:12]')
-                print(typepopl[8:12])
                 raise Exception('')
 
             dictquer = dict()
