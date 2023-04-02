@@ -4,6 +4,7 @@ import pandas as pd
 from tqdm import tqdm
 
 import astropy
+import astroquery
 import scipy
 
 import tdpy
