@@ -9,6 +9,7 @@ import scipy
 
 import tdpy
 from tdpy import summgene
+import chalcedon
 
 
 def quer_mast(request):
@@ -2040,7 +2041,7 @@ def retr_dictpoplstarcomp( \
     
     if boolsystcosc:
         # amplitude of self-lensing
-        dictpoplcomp[namepoplcomptran]['amplslen'] = retr_amplslen(dictpoplcomp[namepoplcomptran]['pericomp'], dictpoplcomp[namepoplcomptran]['radistar'], \
+        dictpoplcomp[namepoplcomptran]['amplslen'] = chalcedon.retr_amplslen(dictpoplcomp[namepoplcomptran]['pericomp'], dictpoplcomp[namepoplcomptran]['radistar'], \
                                                                             dictpoplcomp[namepoplcomptran]['masscomp'], dictpoplcomp[namepoplcomptran]['massstar'])
     
     if typesyst == 'psys':
