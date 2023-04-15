@@ -120,7 +120,9 @@ def retr_dictpopltic8( \
                 print('')
                 print('typepopl')
                 print(typepopl)
-                raise Exception('len(strgtypepoplsplt) == 0')
+                print('strgtypepoplsplt')
+                print(strgtypepoplsplt)
+                raise Exception('len(strgtypepoplsplt) < 2')
         
         strgtimetess = strgtypepoplsplt[1]
         if strgtimetess == 'yr01':
