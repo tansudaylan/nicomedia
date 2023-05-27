@@ -76,6 +76,21 @@ def xmat_tici(listtici):
     return dictquer
 
 
+def retr_toiitici(tici, typeverb=1, dicttoii=None):
+    
+    if dicttoii is None:
+        dicttoii = retr_dicttoii()
+    
+    toii = None
+    indx = np.where(dicttoii['tici'] == tici)[0]
+    if indx.size > 0:
+        toii = int(str(dicttoii['toii'][indx[0]]).split('.')[0])
+        if typeverb > 0:
+            print('Matched the input TIC ID with TOI-%d.' % toii)
+    
+    return toii
+
+
 def retr_dictpopltic8( \
                       typepopl, \
                       numbsyst=None, \
