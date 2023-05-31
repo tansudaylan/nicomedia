@@ -1618,7 +1618,7 @@ def retr_noislsst(magtinpt):
     return nois
 
 
-def retr_noistess(magtinpt, typeoutp='intplite'):
+def retr_noistess(magtinpt, typeoutp='intplite', typeinst='TESS'):
     '''
     TESS photometric precision (over what time scale?)
     ''' 
@@ -1631,6 +1631,13 @@ def retr_noistess(magtinpt, typeoutp='intplite'):
         nois = objtspln(magtinpt)
     if typeoutp == 'calcspoc':
         pass
+    
+    if typeinst == 'TESS' or typeinst == 'TGEO-IR':
+        pass
+    elif typeinst in ['TGEO-IR', 'TGEO-VIS']:
+        nois *= 0.2
+    else:
+        raise Exception('')
 
     return nois
 
