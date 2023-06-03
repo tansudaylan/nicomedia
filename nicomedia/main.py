@@ -1249,6 +1249,9 @@ def retr_dictexar( \
         # discovery method
         dictexar['methdisc'] = objtexar['discoverymethod'][indx].values
         
+        # eccentricity
+        dictexar['ecce'] = objtexar['pl_orbeccen'][indx].values
+        
         # discovery facility
         dictexar['facidisc'] = objtexar['disc_facility'][indx].values
         
@@ -1333,6 +1336,9 @@ def retr_dictexar( \
         dictexar['densplan'] = objtexar['pl_dens'][indx].values # [g/cm3]
         dictexar['vsiistar'] = objtexar['st_vsin'][indx].values # [km/s]
         dictexar['projoblq'] = objtexar['pl_projobliq'][indx].values # [deg]
+        
+        # Boolean flag indicating if the planet is part of a circumbinary planetary system
+        dictexar['boolcibp'] = objtexar['cb_flag'][indx].values == 1
         
         dictexar['numbplanstar'] = np.empty(numbplanexar)
         dictexar['numbplantranstar'] = np.empty(numbplanexar, dtype=int)
@@ -1692,7 +1698,7 @@ def retr_dictpoplstarcomp( \
                           numbsyst=None, \
                           
                           # epochs of mid-transits
-                          epocmtracomp=0.5, \
+                          epocmtracomp=None, \
                           
                           # offset for mid-transit epochs
                           timeepoc=None, \
@@ -1719,6 +1725,9 @@ def retr_dictpoplstarcomp( \
                           
                           # maximum orbital period, only taken into account when typesamporbtcomp == 'peri'
                           maxmpericomp=1000., \
+                          
+                          # maximum cosine of inclination
+                          maxmcosicomp=1., \
                           
                           # Boolean flag to include exomoons
                           boolinclmoon=False, \
@@ -1943,7 +1952,7 @@ def retr_dictpoplstarcomp( \
             continue
 
         # cosine of orbital inclinations
-        dictpoplcomp[namepoplcomptotl]['cosicomp'][indxcompstar[k]] = np.random.rand(dictpoplstar[namepoplstartotl]['numbcompstar'][k])
+        dictpoplcomp[namepoplcomptotl]['cosicomp'][indxcompstar[k]] = np.random.rand(dictpoplstar[namepoplstartotl]['numbcompstar'][k]) * maxmcosicomp
         
         # load star features into component features
         for name in dictpoplstar[namepoplstartotl].keys():
