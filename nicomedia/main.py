@@ -12,6 +12,29 @@ from tdpy import summgene
 import chalcedon
 
 
+def retr_radieins_inft( \
+                       # velocity dispersion [km/s]
+                       dispvelo, \
+
+                      ):
+    '''
+    Calculate the Einstein radius for a source position at infinity
+    '''
+    """
+            :param deflector_dict: deflector properties
+            :param v_sigma: velocity dispersion in km/s
+            :return: Einstein radius in arc-seconds
+            """
+    if v_sigma is None:
+        if deflector_dict is None:
+            raise ValueError("Either deflector_dict or v_sigma must be provided")
+        else:
+            v_sigma = deflector_dict['vel_disp']
+
+    theta_E_infinity = 4 * np.pi * (dispvelo / 3e5)**2 * (180. / np.pi * 3600.)
+    return theta_E_infinity
+
+
 def quer_mast(request):
     '''
     Query the MAST catalog
