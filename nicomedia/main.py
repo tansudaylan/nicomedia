@@ -618,7 +618,7 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
                   ##  0: no text output except critical warnings
                   ##  1: minimal description of the execution
                   ##  2: detailed description of the execution
-                  typeverb=1, strgelem='plan'):
+                  typeverb=1, strgelem='comp'):
     
     dictfact = tdpy.retr_factconv()
     
@@ -730,7 +730,7 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
         dicttoii['dcyc'] = dicttoii['duratrantotl'] / dicttoii['peri'+strgelem] / 24.
         
         boolfrst = np.zeros(numbcomp)
-        dicttoii['numbplanstar'] = np.zeros(numbcomp)
+        dicttoii['numb%sstar' % strgelem] = np.zeros(numbcomp)
         
         liststrgfeatstartici = ['massstar', 'vmagsyst', 'jmagsyst', 'hmagsyst', 'kmagsyst', 'distsyst', 'metastar', 'radistar', 'tmptstar', 'loggstar']
         liststrgfeatstarticiinhe = ['mass', 'Vmag', 'Jmag', 'Hmag', 'Kmag', 'd', 'MH', 'rad', 'Teff', 'logg']
@@ -762,15 +762,15 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
         dicttoii['boolfpos'] = objtexof['TFOPWG Disposition'][indxcomp].values == 'FP'
         
         # augment
-        dicttoii['numbplanstar'] = np.empty(numbcomp)
+        dicttoii['numb%sstar' % strgelem] = np.empty(numbcomp)
         boolfrst = np.zeros(numbcomp, dtype=bool)
         for kk, k in enumerate(indxcomp):
             indxcompthis = np.where(dicttoii['namestar'][kk] == dicttoii['namestar'])[0]
             if kk == indxcompthis[0]:
                 boolfrst[kk] = True
-            dicttoii['numbplanstar'][kk] = indxcompthis.size
+            dicttoii['numb%sstar' % strgelem][kk] = indxcompthis.size
         
-        dicttoii['numbplantranstar'] = dicttoii['numbplanstar']
+        dicttoii['numb%stranstar' % strgelem] = dicttoii['numb%sstar' % strgelem]
         dicttoii['lumistar'] = dicttoii['radistar']**2 * (dicttoii['tmptstar'] / 5778.)**4
         dicttoii['stdvlumistar'] = dicttoii['lumistar'] * np.sqrt((2 * dicttoii['stdvradistar'] / dicttoii['radistar'])**2 + \
                                                                         (4 * dicttoii['stdvtmptstar'] / dicttoii['tmptstar'])**2)
@@ -831,12 +831,12 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
         
         dicttoii['irra'] = dicttoii['lumistar'] / dicttoii['smax'+strgelem]**2
         
-        dicttoii['tmptplan'] = dicttoii['tmptstar'] * np.sqrt(dicttoii['radistar'] / dicttoii['smax'+strgelem] / 2. / dictfact['aurs'])
+        dicttoii['tmpt%s' % strgelem] = dicttoii['tmptstar'] * np.sqrt(dicttoii['radistar'] / dicttoii['smax'+strgelem] / 2. / dictfact['aurs'])
         # temp check if factor of 2 is right
-        dicttoii['stdvtmptplan'] = np.sqrt((dicttoii['stdvtmptstar'] / dicttoii['tmptstar'])**2 + \
+        dicttoii['stdvtmpt%s' % strgelem] = np.sqrt((dicttoii['stdvtmptstar'] / dicttoii['tmptstar'])**2 + \
                                                         0.5 * (dicttoii['stdvradistar'] / dicttoii['radistar'])**2) / np.sqrt(2.)
         
-        dicttoii['densplan'] = 5.51 * dicttoii[strgmasselem] / dicttoii[strgradielem]**3 # [g/cm^3]
+        dicttoii['dens%s' % strgelem] = 5.51 * dicttoii[strgmasselem] / dicttoii[strgradielem]**3 # [g/cm^3]
         dicttoii['booltran'] = np.ones_like(dicttoii['toii'], dtype=bool)
     
         dicttoii['vesc'] = retr_vesc(dicttoii[strgmasselem], dicttoii[strgradielem])
@@ -875,7 +875,7 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
     return dicttoii
 
 
-def calc_tsmmesmm(dictpopl, strgelem='plan', boolsamp=False):
+def calc_tsmmesmm(dictpopl, strgelem='comp', boolsamp=False):
     
     if boolsamp:
         numbsamp = 1000
@@ -891,7 +891,7 @@ def calc_tsmmesmm(dictpopl, strgelem='plan', boolsamp=False):
     
     for n in range(numbcomp):
         
-        if not np.isfinite(dictpopl['tmptplan'][n]):
+        if not np.isfinite(dictpopl['tmpt%s' % strgelem][n]):
             continue
         
         if not np.isfinite(dictpopl[strgradielem][n]):
@@ -906,11 +906,11 @@ def calc_tsmmesmm(dictpopl, strgelem='plan', boolsamp=False):
             
             listmassplan = tdpy.samp_gaustrun(numbsamp, dictpopl[strgmasselem][n], dictpopl['stdvmass' + strgelem][n], 0., np.inf)
 
-            if not np.isfinite(dictpopl['stdvtmptplan'][n]):
-                stdv = dictpopl['tmptplan'][n]
+            if not np.isfinite(dictpopl['stdvtmpt%s' % strgelem][n]):
+                stdv = dictpopl['tmpt%s' % strgelem][n]
             else:
-                stdv = dictpopl['stdvtmptplan'][n]
-            listtmptplan = tdpy.samp_gaustrun(numbsamp, dictpopl['tmptplan'][n], stdv, 0., np.inf)
+                stdv = dictpopl['stdvtmpt%s' % strgelem][n]
+            listtmptplan = tdpy.samp_gaustrun(numbsamp, dictpopl['tmpt%s' % strgelem][n], stdv, 0., np.inf)
             
             if not np.isfinite(dictpopl['stdvradistar'][n]):
                 stdv = dictpopl['radistar'][n]
@@ -924,7 +924,7 @@ def calc_tsmmesmm(dictpopl, strgelem='plan', boolsamp=False):
         
         else:
             listradicomp = dictpopl[strgradielem][None, n]
-            listtmptplan = dictpopl['tmptplan'][None, n]
+            listtmptplan = dictpopl['tmpt%s' % strgelem][None, n]
             listmassplan = dictpopl[strgmasselem][None, n]
             listradistar = dictpopl['radistar'][None, n]
             listkmagsyst = dictpopl['kmagsyst'][None, n]
