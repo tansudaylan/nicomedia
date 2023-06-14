@@ -105,9 +105,9 @@ def retr_toiitici(tici, typeverb=1, dicttoii=None):
         dicttoii = retr_dicttoii()
     
     toii = None
-    indx = np.where(dicttoii['tici'] == tici)[0]
+    indx = np.where(dicttoii['TICID'] == tici)[0]
     if indx.size > 0:
-        toii = int(str(dicttoii['toii'][indx[0]]).split('.')[0])
+        toii = int(str(dicttoii['TOIID'][indx[0]]).split('.')[0])
         if typeverb > 0:
             print('Matched the input TIC ID with TOI-%d.' % toii)
     
@@ -149,7 +149,7 @@ def retr_dictpopltic8( \
     if typeverb > 0:
         print('Retrieving a dictionary of TIC8 for population %s...' % typepopl)
     
-    if typepopl.startswith('targtess'):
+    if typepopl.startswith('TESSTarget'):
         strgtypepoplsplt = typepopl.split('_')
         
         if booldiag:
@@ -197,7 +197,7 @@ def retr_dictpopltic8( \
         
         # dictionary of strings that will be keys of the output dictionary
         dictstrg = dict()
-        dictstrg['ID'] = 'tici'
+        dictstrg['ID'] = 'TICID'
         dictstrg['ra'] = 'rascstar'
         dictstrg['dec'] = 'declstar'
         dictstrg['Tmag'] = 'tmag'
@@ -210,7 +210,7 @@ def retr_dictpopltic8( \
         
         print('typepopl')
         print(typepopl)
-        if typepopl.startswith('targtess'):
+        if typepopl.startswith('TESSTarget'):
             
             if strgtypepoplsplt[2] == '20sc':
                 strgurll = '_20s_'
@@ -264,12 +264,12 @@ def retr_dictpopltic8( \
             for name in dictstrg.keys():
                 dictquer[dictstrg[name]] = np.concatenate(dictquerinte[dictstrg[name]])
             
-            u, indxuniq, cnts = np.unique(dictquer['tici'], return_index=True, return_counts=True)
+            u, indxuniq, cnts = np.unique(dictquer['TICID'], return_index=True, return_counts=True)
             for name in dictstrg.keys():
                 dictquer[dictstrg[name]] = dictquer[dictstrg[name]][indxuniq]
             dictquer['numbtsec'] = cnts
 
-        elif typepopl.startswith('tici'):
+        elif typepopl.startswith('TIC'):
             if typepopl.endswith('hcon'):
                 request = {'service':'Mast.Catalogs.Filtered.Tic.Rows', 'format':'json', 'params':{ \
                 'columns':'ID, ra, dec, Tmag, rad, mass, contratio', \
@@ -303,7 +303,7 @@ def retr_dictpopltic8( \
             dictquer = dict()
             for name in listdictquer[0].keys():
                 if name == 'ID':
-                    namedict = 'tici'
+                    namedict = 'TICID'
                 if name == 'Tmag':
                     namedict = 'tmag'
                 if name == 'ra':
@@ -325,7 +325,7 @@ def retr_dictpopltic8( \
         if typeverb > 0:
             print('%d targets...' % numbtarg)
             print('Writing to %s...' % path)
-        #columns = ['tici', 'radi', 'mass']
+        #columns = ['TICID', 'radi', 'mass']
         pd.DataFrame.from_dict(dictquer).to_csv(path, index=False)#, columns=columns)
     else:
         if typeverb > 0:
@@ -439,7 +439,7 @@ def plot_orbt( \
     # get transit model based on TESS ephemerides
     rratcomp = radicomp / radistar
     
-    rflxtranmodl = eval_modl(time, 'psys', pericomp=peri, epocmtracomp=epoc, rsmacomp=rsmacomp, cosicomp=cosi, rratcomp=rratcomp)['rflx'] - 1.
+    rflxtranmodl = eval_modl(time, 'PlanetarySystemWithPhaseCurve', pericomp=peri, epocmtracomp=epoc, rsmacomp=rsmacomp, cosicomp=cosi, rratcomp=rratcomp)['rflx'] - 1.
     
     lcur = rflxtranmodl + np.random.randn(numbtime) * 1e-6
     ylimrflx = [np.amin(lcur), np.amax(lcur)]
@@ -584,7 +584,7 @@ def retr_dicthostplan(namepopl, \
         
     else:
         dicthost = dict()
-        if namepopl == 'toii':
+        if namepopl == 'TOIID':
             dictplan = retr_dicttoii()
         else:
             dictplan = retr_dictexar()
@@ -634,19 +634,19 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
     strgstdvmass = 'stdv' + strgmasselem
     
     dicttoii = {}
-    dicttoii['toii'] = objtexof['TOI'].values
-    numbcomp = dicttoii['toii'].size
+    dicttoii['TOIID'] = objtexof['TOI'].values
+    numbcomp = dicttoii['TOIID'].size
     indxcomp = np.arange(numbcomp)
     toiitargexof = np.empty(numbcomp, dtype=object)
     for k in indxcomp:
-        toiitargexof[k] = int(dicttoii['toii'][k])
+        toiitargexof[k] = int(dicttoii['TOIID'][k])
         
     if toiitarg is None:
         indxcomp = np.arange(numbcomp)
     else:
         indxcomp = np.where(toiitargexof == toiitarg)[0]
     
-    dicttoii['toii'] = dicttoii['toii'][indxcomp]
+    dicttoii['TOIID'] = dicttoii['TOIID'][indxcomp]
     
     numbcomp = indxcomp.size
     
@@ -658,8 +658,8 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
         dicttoii['namestar'] = np.empty(numbcomp, dtype=object)
         dicttoii['nametoii'] = np.empty(numbcomp, dtype=object)
         for kk, k in enumerate(indxcomp):
-            dicttoii['nametoii'][kk] = 'TOI-' + str(dicttoii['toii'][kk])
-            dicttoii['namestar'][kk] = 'TOI-' + str(dicttoii['toii'][kk])[:-3]
+            dicttoii['nametoii'][kk] = 'TOI-' + str(dicttoii['TOIID'][kk])
+            dicttoii['namestar'][kk] = 'TOI-' + str(dicttoii['TOIID'][kk])[:-3]
         
         dicttoii['depttrancomp'] = objtexof['Depth (ppm)'].values[indxcomp] * 1e-3 # [ppt]
         dicttoii['rratcomp'] = np.sqrt(dicttoii['depttrancomp'] * 1e-3)
@@ -744,14 +744,14 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
         
         ## crossmatch with TIC
         print('Retrieving TIC columns of TOI hosts...')
-        dicttoii['tici'] = objtexof['TIC ID'][indxcomp].values
-        listticiuniq = np.unique(dicttoii['tici'].astype(str))
+        dicttoii['TICID'] = objtexof['TIC ID'][indxcomp].values
+        listticiuniq = np.unique(dicttoii['TICID'].astype(str))
         request = {'service':'Mast.Catalogs.Filtered.Tic', 'format':'json', 'params':{'columns':"*", \
                                                               'filters':[{'paramName':'ID', 'values':list(listticiuniq)}]}}
         headers, outString = quer_mast(request)
         listdictquer = json.loads(outString)['data']
         for k in range(len(listdictquer)):
-            indxtemp = np.where(dicttoii['tici'] == listdictquer[k]['ID'])[0]
+            indxtemp = np.where(dicttoii['TICID'] == listdictquer[k]['ID'])[0]
             if indxtemp.size == 0:
                 raise Exception('')
             for n in indxstrgfeatstartici:
@@ -839,7 +839,7 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
                                                         0.5 * (dicttoii['stdvradistar'] / dicttoii['radistar'])**2) / np.sqrt(2.)
         
         dicttoii['dens%s' % strgelem] = 5.51 * dicttoii[strgmasselem] / dicttoii[strgradielem]**3 # [g/cm^3]
-        dicttoii['booltran'] = np.ones_like(dicttoii['toii'], dtype=bool)
+        dicttoii['booltran'] = np.ones_like(dicttoii['TOIID'], dtype=bool)
     
         dicttoii['vesc'] = retr_vesc(dicttoii[strgmasselem], dicttoii[strgradielem])
         print('temp: vsiistar and projoblq are NaNs')
@@ -852,13 +852,13 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
             listdisptess = objtexof['TESS Disposition'][indxcomp].values.astype(str)
             listdisptfop = objtexof['TFOPWG Disposition'][indxcomp].values.astype(str)
             indxexofcpla = np.where((listdisptfop == 'CP') & (listdisptess == 'PC'))[0]
-            listticicpla = dicttoii['tici'][indxexofcpla]
+            listticicpla = dicttoii['TICID'][indxexofcpla]
             numbticicpla = len(listticicpla)
             indxticicpla = np.arange(numbticicpla)
             for k in indxticicpla:
-                indxexartici = np.where((dictexar['tici'] == int(listticicpla[k])) & \
+                indxexartici = np.where((dictexar['TICID'] == int(listticicpla[k])) & \
                                                     (dictexar['facidisc'] == 'Transiting Exoplanet Survey Satellite (TESS)'))[0]
-                indxexoftici = np.where(dicttoii['tici'] == int(listticicpla[k]))[0]
+                indxexoftici = np.where(dicttoii['TICID'] == int(listticicpla[k]))[0]
                 for strg in dictexar.keys():
                     if indxexartici.size > 0:
                         dicttoii[strg] = np.delete(dicttoii[strg], indxexoftici)
@@ -1256,12 +1256,12 @@ def retr_dictexar( \
         indxplanexar = np.arange(numbplanexar)
 
         listticitemp = objtexar['tic_id'][indx].values
-        dictexar['tici'] = np.empty(numbplanexar, dtype=int)
+        dictexar['TICID'] = np.empty(numbplanexar, dtype=int)
         for k in indxplanexar:
             if isinstance(listticitemp[k], str):
-                dictexar['tici'][k] = listticitemp[k][4:]
+                dictexar['TICID'][k] = listticitemp[k][4:]
             else:
-                dictexar['tici'][k] = 0
+                dictexar['TICID'][k] = 0
         
         dictexar['rascstar'] = objtexar['ra'][indx].values
         dictexar['declstar'] = objtexar['dec'][indx].values
@@ -1269,7 +1269,7 @@ def retr_dictexar( \
         # err1 have positive values or zero
         # err2 have negative values or zero
         
-        dictexar['toii'] = np.empty(numbplanexar, dtype=object)
+        dictexar['TOIID'] = np.empty(numbplanexar, dtype=object)
         
         # discovery method
         dictexar['methdisc'] = objtexar['discoverymethod'][indx].values
@@ -1810,7 +1810,7 @@ def retr_dictpoplstarcomp( \
     dictfact = tdpy.retr_factconv()
     
     # get the features of the star population
-    if typepoplsyst.startswith('targtess') or typepoplsyst.startswith('tici'):
+    if typepoplsyst.startswith('TESSTarget') or typepoplsyst.startswith('TIC'):
         dictpoplstar[namepoplstartotl] = retr_dictpopltic8(typepoplsyst, numbsyst=numbsyst)
         
         print('Removing stars that do not have radii or masses...')
@@ -1826,10 +1826,10 @@ def retr_dictpoplstarcomp( \
             raise Exception('')
 
         dictpoplstar[namepoplstartotl]['densstar'] = 1.41 * dictpoplstar[namepoplstartotl]['massstar'] / dictpoplstar[namepoplstartotl]['radistar']**3
-        dictpoplstar[namepoplstartotl]['idenstar'] = dictpoplstar[namepoplstartotl]['tici']
+        dictpoplstar[namepoplstartotl]['idenstar'] = dictpoplstar[namepoplstartotl]['TIC']
     
 
-    elif typepoplsyst == 'gene':
+    elif typepoplsyst == 'General':
         
         if numbsyst is None:
             numbsyst = 10000
@@ -1869,10 +1869,10 @@ def retr_dictpoplstarcomp( \
     dictstarnumbsamp[namepoplstartotl] = dictpoplstar[namepoplstartotl]['radistar'].size
 
     # probability of occurence
-    if boolsystcosc or typesyst == 'sbin':
+    if boolsystcosc or typesyst == 'StellarBinary':
         dictpoplstar[namepoplstartotl]['numbcompstarmean'] = np.empty_like(dictpoplstar[namepoplstartotl]['radistar']) + np.nan
     
-    if typesyst == 'psys' or typesyst == 'psysmoon':
+    if typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons':
         
         #masstemp = np.copy(dictpoplstar[namepoplstartotl]['massstar'])
         #masstemp[np.where(~np.isfinite(masstemp))] = 1.
@@ -1886,7 +1886,7 @@ def retr_dictpoplstarcomp( \
         if minmnumbcompstar is not None:
             dictpoplstar[namepoplstartotl]['numbcompstar'] = np.maximum(dictpoplstar[namepoplstartotl]['numbcompstar'], minmnumbcompstar)
 
-    elif typesyst == 'psyspcur' or typesyst == 'cosc' or typesyst == 'sbin':
+    elif typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'cosc' or typesyst == 'StellarBinary':
         # number of companions per star
         dictpoplstar[namepoplstartotl]['numbcompstar'] = np.ones(dictpoplstar[namepoplstartotl]['radistar'].size).astype(int)
     else:
@@ -1908,22 +1908,22 @@ def retr_dictpoplstarcomp( \
     if minmmasscomp is None:
         if boolsystcosc:
             minmmasscomp = 5. # [Solar mass]
-        elif typesyst == 'psys' or typesyst == 'psyspcur' or typesyst == 'psysmoon':
-            if typesyst == 'psys' or typesyst == 'psysmoon':
+        elif typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons':
+            if typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons':
                 # ~ Mars mass
                 minmmasscomp = 0.1 # [Earth mass]
-            if typesyst == 'psyspcur':
+            if typesyst == 'PlanetarySystemWithPhaseCurve':
                 # ~ Jupiter mass
                 minmmasscomp = 300. # [Earth mass]
-        elif typesyst == 'sbin':
+        elif typesyst == 'StellarBinary':
             minmmasscomp = 0.5 # [Earth mass]
     
     if boolsystcosc:
         maxmmasscomp = 200. # [Solar mass]
-    elif typesyst == 'psys' or typesyst == 'psyspcur' or typesyst == 'psysmoon':
+    elif typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons':
         # Deuterium burning mass
         maxmmasscomp = 4400. # [Earth mass]
-    elif typesyst == 'sbin':
+    elif typesyst == 'StellarBinary':
         maxmmasscomp = 1000. # [Earth mass]
     else:
         print('typesyst')
@@ -1954,7 +1954,7 @@ def retr_dictpoplstarcomp( \
     dictpoplstar[namepoplstartotl]['masssyst'] = np.empty(dictpoplstar[namepoplstartotl]['radistar'].size)
     
     listnamecomp = ['pericomp', 'cosicomp', 'masscomp', 'smaxcomp', 'epocmtracomp', 'radistar', 'masssyst']
-    if typesyst == 'psysmoon':
+    if typesyst == 'PlanetarySystemWithMoons':
         listnamecomp += ['masscompmoon']
     if not boolsystcosc:
         listnamecomp += ['radicomp', 'denscomp']
@@ -1987,7 +1987,7 @@ def retr_dictpoplstarcomp( \
         dictpoplcomp[namepoplcomptotl]['masscomp'][indxcompstar[k]] = tdpy.util.icdf_powr(np.random.rand(dictpoplstar[namepoplstartotl]['numbcompstar'][k]), \
                                                                                                                                       minmmasscomp, maxmmasscomp, 2.)
         
-        if typesyst == 'psys' or typesyst == 'psyspcur' or typesyst == 'psysmoon' or typesyst == 'sbin':
+        if typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons' or typesyst == 'StellarBinary':
             # companion radius
             dictpoplcomp[namepoplcomptotl]['radicomp'][indxcompstar[k]] = retr_radifrommass(dictpoplcomp[namepoplcomptotl]['masscomp'][indxcompstar[k]])
     
@@ -1996,9 +1996,9 @@ def retr_dictpoplstarcomp( \
                                                                                                      dictpoplcomp[namepoplcomptotl]['radicomp'][indxcompstar[k]]**3
         
         # total mass
-        if boolsystcosc or typesyst == 'sbin':
+        if boolsystcosc or typesyst == 'StellarBinary':
             dictpoplstar[namepoplstartotl]['masssyst'][k] += np.sum(dictpoplcomp[namepoplcomptotl]['masscomp'][indxcompstar[k]])
-        if typesyst == 'psys' or typesyst == 'psyspcur' or typesyst == 'psysmoon':
+        if typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons':
             dictpoplstar[namepoplstartotl]['masssyst'] = dictpoplstar[namepoplstartotl]['massstar']
         
         if typesamporbtcomp == 'peri':
@@ -2067,7 +2067,7 @@ def retr_dictpoplstarcomp( \
                                            dictpoplcomp[namepoplcomptotl]['pericomp'][k] * \
                                            np.round((dictpoplcomp[namepoplcomptotl]['epocmtracomp'][k] - timeepoc) / dictpoplcomp[namepoplcomptotl]['pericomp'][k])
     
-    if typesyst == 'psysmoon':
+    if typesyst == 'PlanetarySystemWithMoons':
         # initialize the total mass of the companion + moons system as the mass of the companion
         dictpoplcomp[namepoplcomptotl]['masscompmoon'] = np.copy(dictpoplcomp[namepoplcomptotl]['masscomp'])
                 
@@ -2082,7 +2082,7 @@ def retr_dictpoplstarcomp( \
     dictpoplcomp[namepoplcomptotl]['inclcomp'] = 90. + (dictpoplcomp[namepoplcomptotl]['inclcomp'] - 90.) * \
                                                                     (2 * np.random.randint(2, size=dictpoplcomp[namepoplcomptotl]['cosicomp'].size) - 1.)
 
-    if typesyst == 'psys':
+    if typesyst == 'PlanetarySystemWithPhaseCurve':
         
         if booldiag:
             
@@ -2126,13 +2126,13 @@ def retr_dictpoplstarcomp( \
         dictpoplcomp[namepoplcomptran]['amplslen'] = chalcedon.retr_amplslen(dictpoplcomp[namepoplcomptran]['pericomp'], dictpoplcomp[namepoplcomptran]['radistar'], \
                                                                             dictpoplcomp[namepoplcomptran]['masscomp'], dictpoplcomp[namepoplcomptran]['massstar'])
     
-    if typesyst == 'psys':
+    if typesyst == 'PlanetarySystemWithPhaseCurve':
         # transit depth
         dictpoplcomp[namepoplcomptran]['depttrancomp'] = 1e3 * dictpoplcomp[namepoplcomptran]['rratcomp']**2 # [ppt]
     
     # define parent population's features that are valid only for transiting systems
     listtemp = ['duratrantotl', 'dcyc']
-    if typesyst == 'psys':
+    if typesyst == 'PlanetarySystemWithPhaseCurve':
         listtemp += ['depttrancomp']
     if boolsystcosc:
         listtemp += ['amplslen']
@@ -2143,7 +2143,7 @@ def retr_dictpoplstarcomp( \
     dictcompnumbsamp[namepoplcomptotl] = dictpoplcomp[namepoplcomptotl]['radistar'].size
     
     indxmooncompstar = [[[] for j in indxcompstar[k]] for k in indxsyst]
-    if typesyst == 'psysmoon':
+    if typesyst == 'PlanetarySystemWithMoons':
         # Hill radius of the companion
         dictpoplcomp[namepoplcomptotl]['radihill'] = retr_radihill(dictpoplcomp[namepoplcomptotl]['smaxcomp'], \
                                                                     dictpoplcomp[namepoplcomptotl]['masscomp'] / dictfact['msme'], \
