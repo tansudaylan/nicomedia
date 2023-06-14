@@ -439,7 +439,7 @@ def plot_orbt( \
     # get transit model based on TESS ephemerides
     rratcomp = radicomp / radistar
     
-    rflxtranmodl = eval_modl(time, 'PlanetarySystemWithPhaseCurve', pericomp=peri, epocmtracomp=epoc, rsmacomp=rsmacomp, cosicomp=cosi, rratcomp=rratcomp)['rflx'] - 1.
+    rflxtranmodl = eval_modl(time, 'PlanetarySystem', pericomp=peri, epocmtracomp=epoc, rsmacomp=rsmacomp, cosicomp=cosi, rratcomp=rratcomp)['rflx'] - 1.
     
     lcur = rflxtranmodl + np.random.randn(numbtime) * 1e-6
     ylimrflx = [np.amin(lcur), np.amax(lcur)]
@@ -1785,7 +1785,7 @@ def retr_dictpoplstarcomp( \
     # Boolean flag indicating if the system is a compact object transiting a stellar companion
     boolsystcosctran = typesyst == 'cosctran'
     # Boolean flag indicating if the system is a compact object with stellar companion
-    boolsystcosc = typesyst == 'cosc' or typesyst == 'cosctran'
+    boolsystcosc = typesyst == 'CompactObjectStellarCompanion' or typesyst == 'cosctran'
 
     dictpoplstar = dict()
     dictstarnumbsamp = dict()
@@ -1872,7 +1872,7 @@ def retr_dictpoplstarcomp( \
     if boolsystcosc or typesyst == 'StellarBinary':
         dictpoplstar[namepoplstartotl]['numbcompstarmean'] = np.empty_like(dictpoplstar[namepoplstartotl]['radistar']) + np.nan
     
-    if typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons':
+    if typesyst == 'PlanetarySystem' or typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons':
         
         #masstemp = np.copy(dictpoplstar[namepoplstartotl]['massstar'])
         #masstemp[np.where(~np.isfinite(masstemp))] = 1.
@@ -1886,7 +1886,7 @@ def retr_dictpoplstarcomp( \
         if minmnumbcompstar is not None:
             dictpoplstar[namepoplstartotl]['numbcompstar'] = np.maximum(dictpoplstar[namepoplstartotl]['numbcompstar'], minmnumbcompstar)
 
-    elif typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'cosc' or typesyst == 'StellarBinary':
+    elif typesyst == 'CompactObjectStellarCompanion' or typesyst == 'StellarBinary':
         # number of companions per star
         dictpoplstar[namepoplstartotl]['numbcompstar'] = np.ones(dictpoplstar[namepoplstartotl]['radistar'].size).astype(int)
     else:
@@ -1908,19 +1908,18 @@ def retr_dictpoplstarcomp( \
     if minmmasscomp is None:
         if boolsystcosc:
             minmmasscomp = 5. # [Solar mass]
-        elif typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons':
-            if typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons':
+        elif typesyst == 'PlanetarySystem' or typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons':
+            if typesyst == 'PlanetarySystem' or typesyst == 'PlanetarySystemWithMoons':
                 # ~ Mars mass
                 minmmasscomp = 0.1 # [Earth mass]
             if typesyst == 'PlanetarySystemWithPhaseCurve':
-                # ~ Jupiter mass
-                minmmasscomp = 300. # [Earth mass]
+                minmmasscomp = 30. # [Earth mass]
         elif typesyst == 'StellarBinary':
             minmmasscomp = 0.5 # [Earth mass]
     
     if boolsystcosc:
         maxmmasscomp = 200. # [Solar mass]
-    elif typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons':
+    elif typesyst == 'PlanetarySystem' or typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons':
         # Deuterium burning mass
         maxmmasscomp = 4400. # [Earth mass]
     elif typesyst == 'StellarBinary':
@@ -1987,7 +1986,7 @@ def retr_dictpoplstarcomp( \
         dictpoplcomp[namepoplcomptotl]['masscomp'][indxcompstar[k]] = tdpy.util.icdf_powr(np.random.rand(dictpoplstar[namepoplstartotl]['numbcompstar'][k]), \
                                                                                                                                       minmmasscomp, maxmmasscomp, 2.)
         
-        if typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons' or typesyst == 'StellarBinary':
+        if typesyst == 'PlanetarySystem' or typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons' or typesyst == 'StellarBinary':
             # companion radius
             dictpoplcomp[namepoplcomptotl]['radicomp'][indxcompstar[k]] = retr_radifrommass(dictpoplcomp[namepoplcomptotl]['masscomp'][indxcompstar[k]])
     
@@ -1998,7 +1997,7 @@ def retr_dictpoplstarcomp( \
         # total mass
         if boolsystcosc or typesyst == 'StellarBinary':
             dictpoplstar[namepoplstartotl]['masssyst'][k] += np.sum(dictpoplcomp[namepoplcomptotl]['masscomp'][indxcompstar[k]])
-        if typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons':
+        if typesyst == 'PlanetarySystem' or typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons':
             dictpoplstar[namepoplstartotl]['masssyst'] = dictpoplstar[namepoplstartotl]['massstar']
         
         if typesamporbtcomp == 'peri':
@@ -2082,7 +2081,7 @@ def retr_dictpoplstarcomp( \
     dictpoplcomp[namepoplcomptotl]['inclcomp'] = 90. + (dictpoplcomp[namepoplcomptotl]['inclcomp'] - 90.) * \
                                                                     (2 * np.random.randint(2, size=dictpoplcomp[namepoplcomptotl]['cosicomp'].size) - 1.)
 
-    if typesyst == 'PlanetarySystemWithPhaseCurve':
+    if typesyst == 'PlanetarySystem':
         
         if booldiag:
             
@@ -2126,13 +2125,13 @@ def retr_dictpoplstarcomp( \
         dictpoplcomp[namepoplcomptran]['amplslen'] = chalcedon.retr_amplslen(dictpoplcomp[namepoplcomptran]['pericomp'], dictpoplcomp[namepoplcomptran]['radistar'], \
                                                                             dictpoplcomp[namepoplcomptran]['masscomp'], dictpoplcomp[namepoplcomptran]['massstar'])
     
-    if typesyst == 'PlanetarySystemWithPhaseCurve':
+    if typesyst == 'PlanetarySystem':
         # transit depth
         dictpoplcomp[namepoplcomptran]['depttrancomp'] = 1e3 * dictpoplcomp[namepoplcomptran]['rratcomp']**2 # [ppt]
     
     # define parent population's features that are valid only for transiting systems
     listtemp = ['duratrantotl', 'dcyc']
-    if typesyst == 'PlanetarySystemWithPhaseCurve':
+    if typesyst == 'PlanetarySystem':
         listtemp += ['depttrancomp']
     if boolsystcosc:
         listtemp += ['amplslen']
