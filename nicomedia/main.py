@@ -2082,9 +2082,6 @@ def retr_dictpoplstarcomp( \
     dictpoplcomp[namepoplcomptotl]['inclcomp'] = 90. + (dictpoplcomp[namepoplcomptotl]['inclcomp'] - 90.) * \
                                                                     (2 * np.random.randint(2, size=dictpoplcomp[namepoplcomptotl]['cosicomp'].size) - 1.)
 
-    print('dictpoplcomp[namepoplcomptotl][inclcomp]')
-    print(dictpoplcomp[namepoplcomptotl]['inclcomp'])
-    
     if typesyst == 'psys':
         
         if booldiag:
