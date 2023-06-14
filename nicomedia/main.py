@@ -774,7 +774,7 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
         dicttoii['lumistar'] = dicttoii['radistar']**2 * (dicttoii['tmptstar'] / 5778.)**4
         dicttoii['stdvlumistar'] = dicttoii['lumistar'] * np.sqrt((2 * dicttoii['stdvradistar'] / dicttoii['radistar'])**2 + \
                                                                         (4 * dicttoii['stdvtmptstar'] / dicttoii['tmptstar'])**2)
-
+        
         # predicted mass from radii
         path = pathephe + 'data/exofop_toi_mass_saved.csv'
         if not os.path.exists(path):
@@ -828,6 +828,8 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
         
         dicttoii['masstotl'] = dicttoii['massstar'] + dicttoii[strgmasselem] / dictfact['msme']
         dicttoii['smax'+strgelem] = retr_smaxkepl(dicttoii['peri'+strgelem], dicttoii['masstotl'])
+        
+        dicttoii['rsma'+strgelem] = (dicttoii[strgradielem] / dictfact['rsre'] + dicttoii['radistar']) / (dictfact['aurs'] * dicttoii['smax'+strgelem])
         
         dicttoii['irra'] = dicttoii['lumistar'] / dicttoii['smax'+strgelem]**2
         
@@ -2001,8 +2003,29 @@ def retr_dictpoplstarcomp( \
         
         if typesamporbtcomp == 'peri':
         
-            dictpoplcomp[namepoplcomptotl]['pericomp'][indxcompstar[k]] = tdpy.util.icdf_powr(np.random.rand(dictpoplstar[namepoplstartotl]['numbcompstar'][k]), \
-                                                                                                                                        minmpericomp, maxmpericomp, 2.)
+            ratiperi = tdpy.util.icdf_powr(np.random.rand(dictpoplstar[namepoplstartotl]['numbcompstar'][k] - 1), 1.25, 1.5, 5.)
+            
+            listpericomp = []
+            for mm in range(dictpoplstar[namepoplstartotl]['numbcompstar'][k]):
+                if mm == 0:
+                    peri = minmpericomp
+                else:
+                    peri = ratiperi[mm-1] * listpericomp[mm-1]
+                listpericomp.append(peri)
+            dictpoplcomp[namepoplcomptotl]['pericomp'][indxcompstar[k]] = np.array(listpericomp)
+
+            if booldiag:
+                ratiperi = dictpoplcomp[namepoplcomptotl]['pericomp'][indxcompstar[k]][1:] / dictpoplcomp[namepoplcomptotl]['pericomp'][indxcompstar[k]][:-1]
+                indx = np.where(ratiperi < 1.2)[0]
+                if indx.size > 0:
+                    print('indx')
+                    summgene(indx)
+                    print('dictpoplcomp[namepoplcomptotl][pericomp][indxcompstar[k]]')
+                    print(dictpoplcomp[namepoplcomptotl]['pericomp'][indxcompstar[k]])
+                    print('dictpoplstar[namepoplstartotl][numbcompstar][k]')
+                    print(dictpoplstar[namepoplstartotl]['numbcompstar'][k])
+                    raise Exception('')
+
             dictpoplcomp[namepoplcomptotl]['smaxcomp'][indxcompstar[k]] = retr_smaxkepl(dictpoplcomp[namepoplcomptotl]['pericomp'][indxcompstar[k]], \
                                                                                                                         dictpoplstar[namepoplstartotl]['masssyst'][k])
         else:
@@ -2055,6 +2078,12 @@ def retr_dictpoplstarcomp( \
     
     # orbital inclinations of the companions
     dictpoplcomp[namepoplcomptotl]['inclcomp'] = 180. / np.pi * np.arccos(dictpoplcomp[namepoplcomptotl]['cosicomp'])
+    
+    dictpoplcomp[namepoplcomptotl]['inclcomp'] = 90. + (dictpoplcomp[namepoplcomptotl]['inclcomp'] - 90.) * \
+                                                                    (2 * np.random.randint(2, size=dictpoplcomp[namepoplcomptotl]['cosicomp'].size) - 1.)
+
+    print('dictpoplcomp[namepoplcomptotl][inclcomp]')
+    print(dictpoplcomp[namepoplcomptotl]['inclcomp'])
     
     if typesyst == 'psys':
         
