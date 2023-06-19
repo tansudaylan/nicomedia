@@ -1872,7 +1872,7 @@ def retr_dictpoplstarcomp( \
     if boolsystcosc or typesyst == 'StellarBinary':
         dictpoplstar[namepoplstartotl]['numbcompstarmean'] = np.empty_like(dictpoplstar[namepoplstartotl]['radistar']) + np.nan
     
-    if typesyst == 'PlanetarySystem' or typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons':
+    if typesyst.startswith('PlanetarySystem'):
         
         #masstemp = np.copy(dictpoplstar[namepoplstartotl]['massstar'])
         #masstemp[np.where(~np.isfinite(masstemp))] = 1.
@@ -1890,9 +1890,12 @@ def retr_dictpoplstarcomp( \
         # number of companions per star
         dictpoplstar[namepoplstartotl]['numbcompstar'] = np.ones(dictpoplstar[namepoplstartotl]['radistar'].size).astype(int)
     else:
+        print('')
+        print('')
+        print('')
         print('typesyst')
         print(typesyst)
-        raise Exception('')
+        raise Exception('typesyst is undefined.')
 
     # Boolean flag of occurence
     dictpoplstar[namepoplstartotl]['booloccu'] = dictpoplstar[namepoplstartotl]['numbcompstar'] > 0
@@ -1917,17 +1920,23 @@ def retr_dictpoplstarcomp( \
         elif typesyst == 'StellarBinary':
             minmmasscomp = 0.5 # [Earth mass]
     
+    boolsystpsys = typesyst.startswith('PlanetarySystem')
+        
     if boolsystcosc:
         maxmmasscomp = 200. # [Solar mass]
-    elif typesyst == 'PlanetarySystem' or typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons':
+    elif boolsystpsys:
         # Deuterium burning mass
         maxmmasscomp = 4400. # [Earth mass]
     elif typesyst == 'StellarBinary':
         maxmmasscomp = 1000. # [Earth mass]
     else:
+        print('')
+        print('')
+        print('')
         print('typesyst')
         print(typesyst)
-        raise Exception('')
+        raise Exception('Could not definemaxmmasscomp')
+
     print('Sampling companion features...')
     
     numbsyst = len(dictpoplstar[namepoplstartotl]['radistar'])
@@ -1952,7 +1961,7 @@ def retr_dictpoplstarcomp( \
     # total mass
     dictpoplstar[namepoplstartotl]['masssyst'] = np.empty(dictpoplstar[namepoplstartotl]['radistar'].size)
     
-    listnamecomp = ['pericomp', 'cosicomp', 'masscomp', 'smaxcomp', 'epocmtracomp', 'radistar', 'masssyst']
+    listnamecomp = ['pericomp', 'cosicomp', 'smaxcomp', 'rotacomp', 'masscomp', 'epocmtracomp', 'radistar', 'masssyst']
     if typesyst == 'PlanetarySystemWithMoons':
         listnamecomp += ['masscompmoon']
     if not boolsystcosc:
@@ -1975,6 +1984,9 @@ def retr_dictpoplstarcomp( \
         if dictpoplstar[namepoplstartotl]['numbcompstar'][k] == 0:
             continue
 
+        # rotation of the orbit (will be replaced by longtide of ascending node)
+        dictpoplcomp[namepoplcomptotl]['rotacomp'][indxcompstar[k]] = 2. * np.pi * np.random.rand(dictpoplstar[namepoplstartotl]['numbcompstar'][k])
+        
         # cosine of orbital inclinations
         dictpoplcomp[namepoplcomptotl]['cosicomp'][indxcompstar[k]] = np.random.rand(dictpoplstar[namepoplstartotl]['numbcompstar'][k]) * maxmcosicomp
         
@@ -2081,7 +2093,7 @@ def retr_dictpoplstarcomp( \
     dictpoplcomp[namepoplcomptotl]['inclcomp'] = 90. + (dictpoplcomp[namepoplcomptotl]['inclcomp'] - 90.) * \
                                                                     (2 * np.random.randint(2, size=dictpoplcomp[namepoplcomptotl]['cosicomp'].size) - 1.)
 
-    if typesyst == 'PlanetarySystem':
+    if boolsystpsys:
         
         if booldiag:
             
