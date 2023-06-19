@@ -1998,7 +1998,7 @@ def retr_dictpoplstarcomp( \
         dictpoplcomp[namepoplcomptotl]['masscomp'][indxcompstar[k]] = tdpy.util.icdf_powr(np.random.rand(dictpoplstar[namepoplstartotl]['numbcompstar'][k]), \
                                                                                                                                       minmmasscomp, maxmmasscomp, 2.)
         
-        if typesyst == 'PlanetarySystem' or typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons' or typesyst == 'StellarBinary':
+        if boolsystpsys or typesyst == 'StellarBinary':
             # companion radius
             dictpoplcomp[namepoplcomptotl]['radicomp'][indxcompstar[k]] = retr_radifrommass(dictpoplcomp[namepoplcomptotl]['masscomp'][indxcompstar[k]])
     
