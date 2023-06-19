@@ -1736,6 +1736,9 @@ def retr_dictpoplstarcomp( \
                           # minimum number of components per star
                           minmnumbcompstar=None, \
                           
+                          # maximum number of components per star
+                          maxmnumbcompstar=None, \
+                          
                           # minimum ratio of semi-major axis to radius of the host star
                           minmsmaxradistar=3., \
                           
@@ -1883,8 +1886,19 @@ def retr_dictpoplstarcomp( \
         # number of companions per star
         dictpoplstar[namepoplstartotl]['numbcompstar'] = np.random.poisson(dictpoplstar[namepoplstartotl]['numbcompstarmean'])
         
+        if booldiag:
+            if maxmnumbcompstar is not None and minmnumbcompstar is not None:
+                if maxmnumbcompstar < minmnumbcompstar:
+                    print('')
+                    print('')
+                    print('')
+                    raise Exception('maxmnumbcompstar < minmnumbcompstar')
+
         if minmnumbcompstar is not None:
             dictpoplstar[namepoplstartotl]['numbcompstar'] = np.maximum(dictpoplstar[namepoplstartotl]['numbcompstar'], minmnumbcompstar)
+
+        if maxmnumbcompstar is not None:
+            dictpoplstar[namepoplstartotl]['numbcompstar'] = np.maximum(dictpoplstar[namepoplstartotl]['numbcompstar'], maxmnumbcompstar)
 
     elif typesyst == 'CompactObjectStellarCompanion' or typesyst == 'StellarBinary':
         # number of companions per star
