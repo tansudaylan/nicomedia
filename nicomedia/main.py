@@ -1898,7 +1898,7 @@ def retr_dictpoplstarcomp( \
             dictpoplstar[namepoplstartotl]['numbcompstar'] = np.maximum(dictpoplstar[namepoplstartotl]['numbcompstar'], minmnumbcompstar)
 
         if maxmnumbcompstar is not None:
-            dictpoplstar[namepoplstartotl]['numbcompstar'] = np.maximum(dictpoplstar[namepoplstartotl]['numbcompstar'], maxmnumbcompstar)
+            dictpoplstar[namepoplstartotl]['numbcompstar'] = np.minimum(dictpoplstar[namepoplstartotl]['numbcompstar'], maxmnumbcompstar)
 
     elif typesyst == 'CompactObjectStellarCompanion' or typesyst == 'StellarBinary':
         # number of companions per star
