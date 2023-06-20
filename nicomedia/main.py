@@ -1313,7 +1313,7 @@ def retr_dictexar( \
             if isinstance(dictexar[strgstrgrefrmasselem][a], float) and not np.isfinite(dictexar[strgstrgrefrmasselem][a]):
                 dictexar[strgstrgrefrmasselem][a] = ''
 
-        for strg in ['radistar', 'massstar', 'tmptstar', 'loggstar', strgradielem, strgmasselem, 'tmptplan', 'tagestar', \
+        for strg in ['radistar', 'massstar', 'tmptstar', 'loggstar', strgradielem, strgmasselem, 'tmpt'+strgelem, 'tagestar', \
                      'vmagsyst', 'jmagsyst', 'hmagsyst', 'kmagsyst', 'tmagsyst', 'metastar', 'distsyst', 'lumistar']:
             strgvarbexar = None
             if strg.endswith('syst'):
@@ -2050,9 +2050,15 @@ def retr_dictpoplstarcomp( \
                     print('dictpoplstar[namepoplstartotl][numbcompstar][k]')
                     print(dictpoplstar[namepoplstartotl]['numbcompstar'][k])
                     raise Exception('')
+            
+            if typesyst == 'PlanetarySystemWithNonKeplerianObjects':
+                raise Exception('')
+            else:
+                factnonk = 1.
 
             dictpoplcomp[namepoplcomptotl]['smaxcomp'][indxcompstar[k]] = retr_smaxkepl(dictpoplcomp[namepoplcomptotl]['pericomp'][indxcompstar[k]], \
-                                                                                                                        dictpoplstar[namepoplstartotl]['masssyst'][k])
+                                                                                                                        dictpoplstar[namepoplstartotl]['masssyst'][k], factnonk=factnonk)
+        
         else:
             # semi-major axes
             #if np.isfinite(dictpoplstar[namepoplstartotl]['densstar'][k]):
@@ -2065,8 +2071,14 @@ def retr_dictpoplstarcomp( \
                                                                          tdpy.util.icdf_powr(np.random.rand(dictpoplstar[namepoplstartotl]['numbcompstar'][k]), \
                                                                                             minmsmaxradistar, maxmsmaxradistar, 2.) / dictfact['aurs']
             
+            if typesyst == 'PlanetarySystemWithNonKeplerianObjects':
+                factnonk = dictpoplcomp[namepoplcomptotl]['smaxcomp'][indxcompstar[k]]**(-1.5)
+            else:
+                factnonk = 1.
+            
             dictpoplcomp[namepoplcomptotl]['pericomp'][indxcompstar[k]] = retr_perikepl(dictpoplcomp[namepoplcomptotl]['smaxcomp'][indxcompstar[k]], \
-                                                                                                                        dictpoplstar[namepoplstartotl]['masssyst'][k])
+                                                                                                                        dictpoplstar[namepoplstartotl]['masssyst'][k], factnonk=factnonk)
+            
     
         
         if booldiag:
@@ -2403,7 +2415,10 @@ def retr_masscomp(amplslen, peri):
     return masscomp
 
 
-def retr_smaxkepl(peri, masstotl):
+def retr_smaxkepl(peri, masstotl, \
+                  # a non-Keplerian factor, controlling the orbital period at a given semi-major axis
+                  factnonk=1., \
+                 ):
     '''
     Get the semi-major axis of a Keplerian orbit (in AU) from the orbital period (in days) and total mass (in Solar masses).
 
@@ -2414,12 +2429,15 @@ def retr_smaxkepl(peri, masstotl):
         smax: the semi-major axis of a Keplerian orbit [AU]
     '''
     
-    smax = (7.496e-6 * masstotl * peri**2)**(1. / 3.) # [AU]
+    smax = (7.496e-6 * masstotl * (peri / factnonk)*2)**(1. / 3.) # [AU]
     
     return smax
 
 
-def retr_perikepl(smax, masstotl):
+def retr_perikepl(smax, masstotl, \
+                  # a non-Keplerian factor, controlling the orbital period at a given semi-major axis
+                  factnonk=1., \
+                 ):
     '''
     Get the period of a Keplerian orbit (in days) from the semi-major axis (in AU) and total mass (in Solar masses).
 
@@ -2430,7 +2448,7 @@ def retr_perikepl(smax, masstotl):
         peri: orbital period [days]
     '''
     
-    peri = np.sqrt(smax**3 / 7.496e-6 / masstotl)
+    peri = np.sqrt(smax**3 / 7.496e-6 / masstotl) * factnonk
     
     return peri
 
