@@ -1978,6 +1978,9 @@ def retr_dictpoplstarcomp( \
     listnamecomp = ['pericomp', 'cosicomp', 'smaxcomp', 'rotacomp', 'masscomp', 'epocmtracomp', 'radistar', 'masssyst']
     if typesyst == 'PlanetarySystemWithMoons':
         listnamecomp += ['masscompmoon']
+    if typesyst == 'PlanetarySystemWithNonKeplerianObjects':
+        listnamecomp += ['factnonkcomp']
+            
     if not boolsystcosc:
         listnamecomp += ['radicomp', 'denscomp']
     for name in listnamecomp:
@@ -2028,7 +2031,7 @@ def retr_dictpoplstarcomp( \
         
         if typesamporbtcomp == 'peri':
         
-            ratiperi = tdpy.util.icdf_powr(np.random.rand(dictpoplstar[namepoplstartotl]['numbcompstar'][k] - 1), 1.25, 1.5, 5.)
+            ratiperi = tdpy.util.icdf_powr(np.random.rand(dictpoplstar[namepoplstartotl]['numbcompstar'][k] - 1), 1.2, 1.3, 5.)
             
             listpericomp = []
             for mm in range(dictpoplstar[namepoplstartotl]['numbcompstar'][k]):
@@ -2072,7 +2075,8 @@ def retr_dictpoplstarcomp( \
                                                                                             minmsmaxradistar, maxmsmaxradistar, 2.) / dictfact['aurs']
             
             if typesyst == 'PlanetarySystemWithNonKeplerianObjects':
-                factnonk = dictpoplcomp[namepoplcomptotl]['smaxcomp'][indxcompstar[k]]**(-1.5)
+                factnonk = tdpy.util.icdf_powr(np.random.rand(dictpoplstar[namepoplstartotl]['numbcompstar'][k]), 0.1, 1., -2.)
+                dictpoplcomp[namepoplcomptotl]['factnonkcomp'][indxcompstar[k]] = factnonk
             else:
                 factnonk = 1.
             
