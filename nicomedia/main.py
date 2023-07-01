@@ -1832,7 +1832,7 @@ def retr_dictpoplstarcomp( \
         dictpoplstar[namepoplstartotl]['idenstar'] = dictpoplstar[namepoplstartotl]['TIC']
     
 
-    elif typepoplsyst == 'General':
+    elif typepoplsyst == 'synthetic':
         
         if numbsyst is None:
             numbsyst = 10000
