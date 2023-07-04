@@ -149,7 +149,7 @@ def retr_dictpopltic8( \
     if typeverb > 0:
         print('Retrieving a dictionary of TIC8 for population %s...' % typepopl)
     
-    if typepopl.startswith('TESSTarget'):
+    if typepopl.startswith('CTL'):
         strgtypepoplsplt = typepopl.split('_')
         
         if booldiag:
@@ -166,6 +166,8 @@ def retr_dictpopltic8( \
         strgtimetess = strgtypepoplsplt[1]
         if strgtimetess == 'yr01':
             listtsec = np.arange(1, 14) # [1-13]
+        elif strgtimetess == 'S1':
+            listtsec = np.arange(1, 2) # [1]
         elif strgtimetess == 'yr02':
             listtsec = np.arange(13, 27) # [13-26]
         elif strgtimetess == 'yr03':
@@ -210,7 +212,7 @@ def retr_dictpopltic8( \
         
         print('typepopl')
         print(typepopl)
-        if typepopl.startswith('TESSTarget'):
+        if typepopl.startswith('CTL'):
             
             if strgtypepoplsplt[2] == '20sc':
                 strgurll = '_20s_'
@@ -1813,7 +1815,7 @@ def retr_dictpoplstarcomp( \
     dictfact = tdpy.retr_factconv()
     
     # get the features of the star population
-    if typepoplsyst.startswith('TESSTarget') or typepoplsyst.startswith('TIC'):
+    if typepoplsyst.startswith('CTL') or typepoplsyst.startswith('TIC'):
         dictpoplstar[namepoplstartotl] = retr_dictpopltic8(typepoplsyst, numbsyst=numbsyst)
         
         print('Removing stars that do not have radii or masses...')
@@ -1829,7 +1831,7 @@ def retr_dictpoplstarcomp( \
             raise Exception('')
 
         dictpoplstar[namepoplstartotl]['densstar'] = 1.41 * dictpoplstar[namepoplstartotl]['massstar'] / dictpoplstar[namepoplstartotl]['radistar']**3
-        dictpoplstar[namepoplstartotl]['idenstar'] = dictpoplstar[namepoplstartotl]['TIC']
+        dictpoplstar[namepoplstartotl]['idenstar'] = dictpoplstar[namepoplstartotl]['TICID']
     
 
     elif typepoplsyst == 'synthetic':
@@ -1865,9 +1867,12 @@ def retr_dictpoplstarcomp( \
                 dictpoplstar[namepoplstartotl][name] = dictpoplstar[namepoplstartotl][name][indx]
 
     else:
+        print('')
+        print('')
+        print('')
         print('typepoplsyst')
         print(typepoplsyst)
-        raise Exception('')
+        raise Exception('Undefined typepoplsyst.')
     
     dictstarnumbsamp[namepoplstartotl] = dictpoplstar[namepoplstartotl]['radistar'].size
 
@@ -1903,6 +1908,15 @@ def retr_dictpoplstarcomp( \
     elif typesyst == 'CompactObjectStellarCompanion' or typesyst == 'StellarBinary':
         # number of companions per star
         dictpoplstar[namepoplstartotl]['numbcompstar'] = np.ones(dictpoplstar[namepoplstartotl]['radistar'].size).astype(int)
+        
+    elif typesyst == 'StarFlaring':
+        
+        # mean number of flares per star
+        dictpoplstar[namepoplstartotl]['numbflarstarmean'] = 0.5 * dictpoplstar[namepoplstartotl]['massstar']**(-1.)
+        
+        # number of flares per star
+        dictpoplstar[namepoplstartotl]['numbflarstar'] = np.random.poisson(dictpoplstar[namepoplstartotl]['numbflarstarmean'])
+        
     else:
         print('')
         print('')
@@ -2323,8 +2337,17 @@ def retr_dictpoplstarcomp( \
     
             # mid-transit times of the moons
             dictpoplmoon[namepoplmoontotl]['epocmtramoon'] = 1e8 * np.random.rand(numbmoontotl)
-            
-    return dictpoplstar, dictpoplcomp, dictpoplmoon, dictcompnumbsamp, dictcompindxsamp, indxcompstar, indxmooncompstar
+    
+    dictnico = dict()
+    dictnico['dictpoplstar'] = dictpoplstar
+    dictnico['dictpoplcomp'] = dictpoplcomp
+    dictnico['dictpoplmoon'] = dictpoplmoon
+    dictnico['dictcompnumbsamp'] = dictcompnumbsamp
+    dictnico['dictcompindxsamp'] = dictcompindxsamp
+    dictnico['indxcompstar'] = indxcompstar
+    dictnico['indxmooncompstar'] = indxmooncompstar
+    
+    return dictnico
        
 
 def retr_listtablobsv(strgmast):
