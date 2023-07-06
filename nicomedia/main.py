@@ -1803,10 +1803,8 @@ def retr_dictpoplstarcomp( \
             raise Exception('typesyst is undefined.')
 
     # dictionary keys of the populations
-    namepoplstartotl = 'star' + typepoplsyst + 'totl'
-    namepoplstaroccu = 'star' + typepoplsyst + 'occu'
-    
-    namepoplmoontotl = 'mooncompstar' + typepoplsyst + 'totl'
+    namepoplstartotl = 'star_%s_All' % typepoplsyst
+    namepoplstaroccu = 'star_%s_Occurrent' % typepoplsyst
     
     dictpopl = dict()
     dictpopl['star'] = dict()
@@ -1934,9 +1932,9 @@ def retr_dictpoplstarcomp( \
         strgnumblimbbody = 'numb%s%s' % (strglimb, strgbody)
         strgnumblimbbodymean = 'numb%s%smean' % (strglimb, strgbody)
         
-        namepopllimbtotl = '%s%s%stotl' % (strglimb, strgbody, typepoplsyst)
+        namepopllimbtotl = '%s%s_%s_All' % (strglimb, strgbody, typepoplsyst)
         if strglimb == 'comp':
-            namepoplcomptran = '%s%s%stran' % (strglimb, strgbody, typepoplsyst)
+            namepoplcomptran = '%s%s_%s_Transiting' % (strglimb, strgbody, typepoplsyst)
         
         dictpopl[strglimb] = dict()
         dictnumbsamp[strglimb] = dict()
@@ -1946,6 +1944,7 @@ def retr_dictpoplstarcomp( \
         dictpopl[strglimb][namepopllimbtotl] = dict()
         
         if boolhavemoon:
+            namepoplmoontotl = 'mooncompstar_%s_All'
             dictpopl['moon'] = dict()
             dictmoonnumbsamp = dict()
             dictmoonindxsamp = dict()
