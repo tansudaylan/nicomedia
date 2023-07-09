@@ -1806,6 +1806,7 @@ def retr_dictpoplstarcomp( \
     namepoplstartotl = 'star_%s_All' % typepoplsyst
     namepoplstaroccu = 'star_%s_Occurrent' % typepoplsyst
     
+    dictnico = dict()
     dictpopl = dict()
     dictpopl['star'] = dict()
     dictstarnumbsamp = dict()
@@ -2420,8 +2421,11 @@ def retr_dictpoplstarcomp( \
             
                     # planet-moon conjunction times
                     dictpopl['moon'][namepoplmoontotl]['epocmtramoon'] = 1e8 * np.random.rand(numbmoontotl)
+        
+        dictnico['listnamefeatbody'] = np.array(list(dictpopl[strgbody][namepoplstartotl].keys()))
+        dictnico['listnamefeatlimb'] = np.array(list(dictpopl[strglimb][namepopllimbtotl].keys()))
+        dictnico['listnamefeatlimbonly'] = np.setdiff1d(dictnico['listnamefeatlimb'], dictnico['listnamefeatbody'])
     
-    dictnico = dict()
     dictnico['dictpopl'] = dictpopl
     dictnico['dictindx'] = dictindx
     dictnico['dictnumbsamp'] = dictnumbsamp
