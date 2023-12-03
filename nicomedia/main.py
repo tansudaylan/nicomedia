@@ -818,7 +818,9 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
                 dicttemp[name] = np.array(dicttemp[name])
                 if toiitarg is not None:
                     dicttemp[name] = dicttemp[name][indxcomp]
-
+        
+        print('dicttemp')
+        print(dicttemp.keys())
         dicttoii[strgmasselem] = dicttemp['mass' + strgelem]
         
         perielem = dicttoii['peri'+strgelem]
@@ -875,6 +877,9 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
         
         indx = np.where(dicttoii['esmmacwg'] == 0)[0]
         dicttoii['esmmacwg'][indx] = np.nan
+        
+        # surface gravity of the companion
+        dicttoii['logg' + strgelem] = dicttoii[strgmasselem] / dicttoii[strgradielem]**2
 
     return dicttoii
 
@@ -1051,8 +1056,7 @@ def retr_toiifstr():
                              ##  1: minimal description of the execution
                              ##  2: detailed description of the execution
                              typeverb=1, \
-
-                             strgelem='plan')
+                             )
     listtoiifstr = []
     for k in range(len(dicttoii['strgcomm'])):
         if isinstance(dicttoii['strgcomm'][k], str) and 'found in faint-star QLP search' in dicttoii['strgcomm'][k]:
@@ -1221,7 +1225,7 @@ def retr_dictexar( \
                   ##  2: detailed description of the execution
                   typeverb=1, \
                   
-                  strgelem='plan', \
+                  strgelem='comp', \
                  ):
     
     strgradielem = 'radi' + strgelem
@@ -1233,10 +1237,10 @@ def retr_dictexar( \
     strgstrgrefrmasselem = 'strgrefrmass' + strgelem
 
     # get NASA Exoplanet Archive data
-    path = os.environ['EPHESOS_DATA_PATH'] + '/data/PSCompPars_2023.01.07_17.02.16.csv'
+    path = os.environ['EPHESOS_DATA_PATH'] + '/data/PSCompPars_2023.10.12_16.58.05.csv'
     if typeverb > 0:
         print('Reading from %s...' % path)
-    objtexar = pd.read_csv(path, skiprows=316)
+    objtexar = pd.read_csv(path, skiprows=318)
     if strgexar is None:
         indx = np.arange(objtexar['hostname'].size)
         #indx = np.where(objtexar['default_flag'].values == 1)[0]
@@ -1286,6 +1290,7 @@ def retr_dictexar( \
         dictexar['yeardisc'] = objtexar['disc_year'][indx].values
         
         dictexar['irra'] = objtexar['pl_insol'][indx].values
+        dictexar['irra'][np.where(dictexar['irra'] <= 0.)] = np.nan
         dictexar['pericomp'] = objtexar['pl_orbper'][indx].values # [days]
         dictexar['smaxcomp'] = objtexar['pl_orbsmax'][indx].values # [AU]
         dictexar['epocmtracomp'] = objtexar['pl_tranmid'][indx].values # [BJD]
@@ -1357,6 +1362,7 @@ def retr_dictexar( \
             dictexar[strg] = objtexar[strgvarbexar][indx].values
             dictexar['stdv%s' % strg] = (objtexar['%serr1' % strgvarbexar][indx].values - objtexar['%serr2' % strgvarbexar][indx].values) / 2.
        
+        #dictexar['fxuvpred'] = 
         dictexar['vesc'] = retr_vesc(dictexar[strgmasselem], dictexar[strgradielem])
         dictexar['masstotl'] = dictexar['massstar'] + dictexar[strgmasselem] / dictfact['msme']
         
@@ -1367,17 +1373,17 @@ def retr_dictexar( \
         # Boolean flag indicating if the planet is part of a circumbinary planetary system
         dictexar['boolcibp'] = objtexar['cb_flag'][indx].values == 1
         
-        dictexar['numbplanstar'] = np.empty(numbplanexar)
-        dictexar['numbplantranstar'] = np.empty(numbplanexar, dtype=int)
+        dictexar['numb%sstar' % strgelem] = np.empty(numbplanexar)
+        dictexar['numb%stranstar' % strgelem] = np.empty(numbplanexar, dtype=int)
         boolfrst = np.zeros(numbplanexar, dtype=bool)
         #dictexar['booltrantotl'] = np.empty(numbplanexar, dtype=bool)
         for k, namestar in enumerate(dictexar['namestar']):
             indxexarstar = np.where(namestar == dictexar['namestar'])[0]
             if k == indxexarstar[0]:
                 boolfrst[k] = True
-            dictexar['numbplanstar'][k] = indxexarstar.size
+            dictexar['numb%sstar' % strgelem][k] = indxexarstar.size
             indxexarstartran = np.where((namestar == dictexar['namestar']) & dictexar['booltran'])[0]
-            dictexar['numbplantranstar'][k] = indxexarstartran.size
+            dictexar['numb%stranstar' % strgelem][k] = indxexarstartran.size
             #dictexar['booltrantotl'][k] = dictexar['booltran'][indxexarstar].all()
         
         objticrs = astropy.coordinates.SkyCoord(ra=dictexar['rascstar'], \
@@ -1407,6 +1413,13 @@ def retr_dictexar( \
         # calculate TSM and ESM
         calc_tsmmesmm(dictexar, strgelem=strgelem)
         
+        indxnonntran = np.where(~dictexar['booltran'])[0]
+        dictexar['esmm'][indxnonntran] = np.nan
+        dictexar['tsmm'][indxnonntran] = np.nan
+        
+        # surface gravity of the companion
+        dictexar['logg' + strgelem] = dictexar[strgmasselem] / dictexar[strgradielem]**2
+
     return dictexar
 
 
