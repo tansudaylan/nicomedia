@@ -894,51 +894,51 @@ def calc_tsmmesmm(dictpopl, strgelem='comp', boolsamp=False):
     strgradielem = 'radi' + strgelem
     strgmasselem = 'mass' + strgelem
     
-    numbcomp = dictpopl[strgmasselem].size
+    numbcomp = dictpopl[strgmasselem][0].size
     listtsmm = np.empty((numbsamp, numbcomp)) + np.nan
     listesmm = np.empty((numbsamp, numbcomp)) + np.nan
     
     for n in range(numbcomp):
         
-        if not np.isfinite(dictpopl['tmpt%s' % strgelem][n]):
+        if not np.isfinite(dictpopl['tmpt%s' % strgelem][0][n]):
             continue
         
-        if not np.isfinite(dictpopl[strgradielem][n]):
+        if not np.isfinite(dictpopl[strgradielem][0][n]):
             continue
         
         if boolsamp:
-            if not np.isfinite(dictpopl['stdvradi' + strgelem][n]):
-                stdv = dictpopl[strgradielem][n]
+            if not np.isfinite(dictpopl['stdvradi' + strgelem][0][n]):
+                stdv = dictpopl[strgradielem][0][n]
             else:
-                stdv = dictpopl['stdvradi' + strgelem][n]
-            listradicomp = tdpy.samp_gaustrun(numbsamp, dictpopl[strgradielem][n], stdv, 0., np.inf)
+                stdv = dictpopl['stdvradi' + strgelem][0][n]
+            listradicomp = tdpy.samp_gaustrun(numbsamp, dictpopl[strgradielem][0][n], stdv, 0., np.inf)
             
-            listmassplan = tdpy.samp_gaustrun(numbsamp, dictpopl[strgmasselem][n], dictpopl['stdvmass' + strgelem][n], 0., np.inf)
+            listmassplan = tdpy.samp_gaustrun(numbsamp, dictpopl[strgmasselem][0][n], dictpopl['stdvmass' + strgelem][0][n], 0., np.inf)
 
-            if not np.isfinite(dictpopl['stdvtmpt%s' % strgelem][n]):
-                stdv = dictpopl['tmpt%s' % strgelem][n]
+            if not np.isfinite(dictpopl['stdvtmpt%s' % strgelem][0][n]):
+                stdv = dictpopl['tmpt%s' % strgelem][0][n]
             else:
-                stdv = dictpopl['stdvtmpt%s' % strgelem][n]
-            listtmptplan = tdpy.samp_gaustrun(numbsamp, dictpopl['tmpt%s' % strgelem][n], stdv, 0., np.inf)
+                stdv = dictpopl['stdvtmpt%s' % strgelem][0][n]
+            listtmptplan = tdpy.samp_gaustrun(numbsamp, dictpopl['tmpt%s' % strgelem][0][n], stdv, 0., np.inf)
             
-            if not np.isfinite(dictpopl['stdvradistar'][n]):
-                stdv = dictpopl['radistar'][n]
+            if not np.isfinite(dictpopl['stdvradistar'][0][n]):
+                stdv = dictpopl['radistar'][0][n]
             else:
-                stdv = dictpopl['stdvradistar'][n]
-            listradistar = tdpy.samp_gaustrun(numbsamp, dictpopl['radistar'][n], stdv, 0., np.inf)
+                stdv = dictpopl['stdvradistar'][0][n]
+            listradistar = tdpy.samp_gaustrun(numbsamp, dictpopl['radistar'][0][n], stdv, 0., np.inf)
             
-            listkmagsyst = tdpy.icdf_gaus(np.random.rand(numbsamp), dictpopl['kmagsyst'][n], dictpopl['stdvkmagsyst'][n])
-            listjmagsyst = tdpy.icdf_gaus(np.random.rand(numbsamp), dictpopl['jmagsyst'][n], dictpopl['stdvjmagsyst'][n])
-            listtmptstar = tdpy.samp_gaustrun(numbsamp, dictpopl['tmptstar'][n], dictpopl['stdvtmptstar'][n], 0., np.inf)
+            listkmagsyst = tdpy.icdf_gaus(np.random.rand(numbsamp), dictpopl['kmagsyst'][0][n], dictpopl['stdvkmagsyst'][0][n])
+            listjmagsyst = tdpy.icdf_gaus(np.random.rand(numbsamp), dictpopl['jmagsyst'][0][n], dictpopl['stdvjmagsyst'][0][n])
+            listtmptstar = tdpy.samp_gaustrun(numbsamp, dictpopl['tmptstar'][0][n], dictpopl['stdvtmptstar'][0][n], 0., np.inf)
         
         else:
-            listradicomp = dictpopl[strgradielem][None, n]
-            listtmptplan = dictpopl['tmpt%s' % strgelem][None, n]
-            listmassplan = dictpopl[strgmasselem][None, n]
-            listradistar = dictpopl['radistar'][None, n]
-            listkmagsyst = dictpopl['kmagsyst'][None, n]
-            listjmagsyst = dictpopl['jmagsyst'][None, n]
-            listtmptstar = dictpopl['tmptstar'][None, n]
+            listradicomp = dictpopl[strgradielem][0][None, n]
+            listtmptplan = dictpopl['tmpt%s' % strgelem][0][None, n]
+            listmassplan = dictpopl[strgmasselem][0][None, n]
+            listradistar = dictpopl['radistar'][0][None, n]
+            listkmagsyst = dictpopl['kmagsyst'][0][None, n]
+            listjmagsyst = dictpopl['jmagsyst'][0][None, n]
+            listtmptstar = dictpopl['tmptstar'][0][None, n]
         
         # TSM
         listtsmm[:, n] = retr_tsmm(listradicomp, listtmptplan, listmassplan, listradistar, listjmagsyst)
@@ -964,10 +964,10 @@ def calc_tsmmesmm(dictpopl, strgelem='comp', boolsamp=False):
         #    print('listesmm[:, n]')
         #    summgene(listesmm[:, n])
         #    raise Exception('')
-    dictpopl['tsmm'] = np.nanmedian(listtsmm, 0)
-    dictpopl['stdvtsmm'] = np.nanstd(listtsmm, 0)
-    dictpopl['esmm'] = np.nanmedian(listesmm, 0)
-    dictpopl['stdvesmm'] = np.nanstd(listesmm, 0)
+    dictpopl['tsmm'][0] = np.nanmedian(listtsmm, 0)
+    dictpopl['stdvtsmm'][0] = np.nanstd(listtsmm, 0)
+    dictpopl['esmm'][0] = np.nanmedian(listesmm, 0)
+    dictpopl['stdvesmm'][0] = np.nanstd(listesmm, 0)
     
     #print('listesmm')
     #summgene(listesmm)
@@ -1235,7 +1235,14 @@ def retr_dictexar( \
     
     strgstrgrefrradielem = 'strgrefrradi' + strgelem
     strgstrgrefrmasselem = 'strgrefrmass' + strgelem
-
+    
+    # variables for which both the quantity and its uncertainty will be retrieved
+    liststrgstdv = ['radistar', 'massstar', 'tmptstar', 'loggstar', strgradielem, strgmasselem, 'tmpt'+strgelem, 'tagestar', \
+                    'vmagsyst', 'jmagsyst', 'hmagsyst', 'kmagsyst', 'tmagsyst', 'metastar', 'distsyst', 'lumistar', \
+                   ]
+        
+    strgnumbelemstar = 'numb%sstar' % strgelem
+    strgnumbelemtranstar = 'numb%stranstar' % strgelem
     # get NASA Exoplanet Archive data
     path = os.environ['EPHESOS_DATA_PATH'] + '/data/PSCompPars_2023.10.12_16.58.05.csv'
     if typeverb > 0:
@@ -1255,73 +1262,84 @@ def retr_dictexar( \
         return None
     else:
         dictexar = {}
-        dictexar['namestar'] = objtexar['hostname'][indx].values
-        dictexar['nameplan'] = objtexar['pl_name'][indx].values
+
+        listnamefeat = ['namestar', 'nameplan', 'TICID', 'rascstar', 'declstar', 'TOIID', 'methdisc', 'eccecomp', 'facidisc', 'yeardisc', \
+                        'irra', 'pericomp', 'smaxcomp', 'epocmtracomp', 'cosicomp', 'duratrantotl', 'booltran', 'strgprovmass', strgstrgrefrradielem, strgstrgrefrmasselem, \
+                        'vesc', 'masstotl', 'densplan', 'vsiistar', 'projoblq', 'boolcibp', strgnumbelemstar, strgnumbelemtranstar, 'dcyc', 'lgalstar', 'bgalstar', \
+                        'loecstar', 'laecstar', 'rratcomp', 'rsmacomp', 'esmm', 'tsmm', 'loggcomp', 'depttrancomp', \
+                        'esmm', 'tsmm', 'stdvesmm', 'stdvtsmm', \
+                        ]
+        for name in liststrgstdv:
+            listnamefeat += [name]
+            listnamefeat += ['stdv' + name]
         
-        numbplanexar = len(dictexar['nameplan'])
+        for name in listnamefeat:
+            dictexar[name] = [[], '']
+        
+        dictexar['namestar'][0] = objtexar['hostname'][indx].values
+        dictexar['nameplan'][0] = objtexar['pl_name'][indx].values
+        
+        numbplanexar = len(dictexar['nameplan'][0])
         indxplanexar = np.arange(numbplanexar)
 
         listticitemp = objtexar['tic_id'][indx].values
-        dictexar['TICID'] = np.empty(numbplanexar, dtype=int)
+        dictexar['TICID'][0] = np.empty(numbplanexar, dtype=int)
         for k in indxplanexar:
             if isinstance(listticitemp[k], str):
-                dictexar['TICID'][k] = listticitemp[k][4:]
+                dictexar['TICID'][0][k] = listticitemp[k][4:]
             else:
-                dictexar['TICID'][k] = 0
+                dictexar['TICID'][0][k] = 0
         
-        dictexar['rascstar'] = objtexar['ra'][indx].values
-        dictexar['declstar'] = objtexar['dec'][indx].values
+        dictexar['rascstar'][0] = objtexar['ra'][indx].values
+        dictexar['declstar'][0] = objtexar['dec'][indx].values
         
         # err1 have positive values or zero
         # err2 have negative values or zero
         
-        dictexar['TOIID'] = np.empty(numbplanexar, dtype=object)
+        dictexar['TOIID'][0] = np.empty(numbplanexar, dtype=object)
         
         # discovery method
-        dictexar['methdisc'] = objtexar['discoverymethod'][indx].values
-        
-        # eccentricity
-        dictexar['ecce'] = objtexar['pl_orbeccen'][indx].values
+        dictexar['methdisc'][0] = objtexar['discoverymethod'][indx].values
         
         # discovery facility
-        dictexar['facidisc'] = objtexar['disc_facility'][indx].values
+        dictexar['facidisc'][0] = objtexar['disc_facility'][indx].values
         
         # discovery year
-        dictexar['yeardisc'] = objtexar['disc_year'][indx].values
+        dictexar['yeardisc'][0] = objtexar['disc_year'][indx].values
         
-        dictexar['irra'] = objtexar['pl_insol'][indx].values
-        dictexar['irra'][np.where(dictexar['irra'] <= 0.)] = np.nan
-        dictexar['pericomp'] = objtexar['pl_orbper'][indx].values # [days]
-        dictexar['smaxcomp'] = objtexar['pl_orbsmax'][indx].values # [AU]
-        dictexar['epocmtracomp'] = objtexar['pl_tranmid'][indx].values # [BJD]
-        dictexar['cosicomp'] = np.cos(objtexar['pl_orbincl'][indx].values / 180. * np.pi)
-        dictexar['duratrantotl'] = objtexar['pl_trandur'][indx].values # [hour]
-        dictexar['depttrancomp'] = 10. * objtexar['pl_trandep'][indx].values # ppt
+        dictexar['irra'][0] = objtexar['pl_insol'][indx].values
+        dictexar['irra'][0][np.where(dictexar['irra'][0] <= 0.)] = np.nan
         
-        # to be deleted
-        #dictexar['boolfpos'] = np.zeros(numbplanexar, dtype=bool)
+        dictexar['pericomp'][0] = objtexar['pl_orbper'][indx].values # [days]
         
-        dictexar['booltran'] = objtexar['tran_flag'][indx].values
+        dictexar['smaxcomp'][0] = objtexar['pl_orbsmax'][indx].values # [AU]
+        
+        # eccentricity
+        dictexar['eccecomp'][0] = objtexar['pl_orbeccen'][indx].values
+        
+        dictexar['epocmtracomp'][0] = objtexar['pl_tranmid'][indx].values # [BJD]
+        dictexar['cosicomp'][0] = np.cos(objtexar['pl_orbincl'][indx].values / 180. * np.pi)
+        dictexar['duratrantotl'][0] = objtexar['pl_trandur'][indx].values # [hour]
+        dictexar['depttrancomp'][0] = 10. * objtexar['pl_trandep'][indx].values # ppt
+        
+        dictexar['booltran'][0] = objtexar['tran_flag'][indx].values.astype(bool)
         
         # mass provenance
-        dictexar['strgprovmass'] = objtexar['pl_bmassprov'][indx].values
-        
-        dictexar['booltran'] = dictexar['booltran'].astype(bool)
+        dictexar['strgprovmass'][0] = objtexar['pl_bmassprov'][indx].values
 
         # radius reference
-        dictexar[strgstrgrefrradielem] = objtexar['pl_rade_reflink'][indx].values
-        for a in range(dictexar[strgstrgrefrradielem].size):
-            if isinstance(dictexar[strgstrgrefrradielem][a], float) and not np.isfinite(dictexar[strgstrgrefrradielem][a]):
-                dictexar[strgstrgrefrradielem][a] = ''
+        dictexar[strgstrgrefrradielem][0] = objtexar['pl_rade_reflink'][indx].values
+        for a in range(dictexar[strgstrgrefrradielem][0].size):
+            if isinstance(dictexar[strgstrgrefrradielem][0][a], float) and not np.isfinite(dictexar[strgstrgrefrradielem][0][a]):
+                dictexar[strgstrgrefrradielem][0][a] = ''
         
         # mass reference
-        dictexar[strgstrgrefrmasselem] = objtexar['pl_bmasse_reflink'][indx].values
-        for a in range(dictexar[strgstrgrefrmasselem].size):
-            if isinstance(dictexar[strgstrgrefrmasselem][a], float) and not np.isfinite(dictexar[strgstrgrefrmasselem][a]):
-                dictexar[strgstrgrefrmasselem][a] = ''
-
-        for strg in ['radistar', 'massstar', 'tmptstar', 'loggstar', strgradielem, strgmasselem, 'tmpt'+strgelem, 'tagestar', \
-                     'vmagsyst', 'jmagsyst', 'hmagsyst', 'kmagsyst', 'tmagsyst', 'metastar', 'distsyst', 'lumistar']:
+        dictexar[strgstrgrefrmasselem][0] = objtexar['pl_bmasse_reflink'][indx].values
+        for a in range(dictexar[strgstrgrefrmasselem][0].size):
+            if isinstance(dictexar[strgstrgrefrmasselem][0][a], float) and not np.isfinite(dictexar[strgstrgrefrmasselem][0][a]):
+                dictexar[strgstrgrefrmasselem][0][a] = ''
+        
+        for strg in liststrgstdv:
             strgvarbexar = None
             if strg.endswith('syst'):
                 strgvarbexar = 'sy_'
@@ -1359,66 +1377,75 @@ def retr_dictexar( \
                 print('strg')
                 print(strg)
                 raise Exception('')
-            dictexar[strg] = objtexar[strgvarbexar][indx].values
-            dictexar['stdv%s' % strg] = (objtexar['%serr1' % strgvarbexar][indx].values - objtexar['%serr2' % strgvarbexar][indx].values) / 2.
+            
+            stdv = (objtexar['%serr1' % strgvarbexar][indx].values - objtexar['%serr2' % strgvarbexar][indx].values) / 2.
+            
+            dictexar[strg][0] = objtexar[strgvarbexar][indx].values
+            dictexar['stdv%s' % strg][0] = stdv
+            if strg == strgradielem:
+                dictexar[strg][1] = '$R_\oplus$'
+                dictexar['stdv%s' % strg][1] = '$R_\oplus$'
+            elif strg == strgmasselem:
+                dictexar[strg][1] = '$M_\oplus$'
+                dictexar['stdv%s' % strg][1] = '$M_\oplus$'
        
         #dictexar['fxuvpred'] = 
-        dictexar['vesc'] = retr_vesc(dictexar[strgmasselem], dictexar[strgradielem])
-        dictexar['masstotl'] = dictexar['massstar'] + dictexar[strgmasselem] / dictfact['msme']
+        dictexar['vesc'][0] = retr_vesc(dictexar[strgmasselem][0], dictexar[strgradielem][0])
+        dictexar['masstotl'][0] = dictexar['massstar'][0] + dictexar[strgmasselem][0] / dictfact['msme']
         
-        dictexar['densplan'] = objtexar['pl_dens'][indx].values # [g/cm3]
-        dictexar['vsiistar'] = objtexar['st_vsin'][indx].values # [km/s]
-        dictexar['projoblq'] = objtexar['pl_projobliq'][indx].values # [deg]
+        dictexar['densplan'][0] = objtexar['pl_dens'][indx].values # [g/cm3]
+        dictexar['vsiistar'][0] = objtexar['st_vsin'][indx].values # [km/s]
+        dictexar['projoblq'][0] = objtexar['pl_projobliq'][indx].values # [deg]
         
         # Boolean flag indicating if the planet is part of a circumbinary planetary system
-        dictexar['boolcibp'] = objtexar['cb_flag'][indx].values == 1
+        dictexar['boolcibp'][0] = objtexar['cb_flag'][indx].values == 1
         
-        dictexar['numb%sstar' % strgelem] = np.empty(numbplanexar)
-        dictexar['numb%stranstar' % strgelem] = np.empty(numbplanexar, dtype=int)
+        dictexar[strgnumbelemstar][0] = np.empty(numbplanexar)
+        dictexar[strgnumbelemtranstar][0] = np.empty(numbplanexar, dtype=int)
         boolfrst = np.zeros(numbplanexar, dtype=bool)
-        #dictexar['booltrantotl'] = np.empty(numbplanexar, dtype=bool)
-        for k, namestar in enumerate(dictexar['namestar']):
-            indxexarstar = np.where(namestar == dictexar['namestar'])[0]
+        #dictexar['booltrantotl'][0] = np.empty(numbplanexar, dtype=bool)
+        for k, namestar in enumerate(dictexar['namestar'][0]):
+            indxexarstar = np.where(namestar == dictexar['namestar'][0])[0]
             if k == indxexarstar[0]:
                 boolfrst[k] = True
-            dictexar['numb%sstar' % strgelem][k] = indxexarstar.size
-            indxexarstartran = np.where((namestar == dictexar['namestar']) & dictexar['booltran'])[0]
-            dictexar['numb%stranstar' % strgelem][k] = indxexarstartran.size
-            #dictexar['booltrantotl'][k] = dictexar['booltran'][indxexarstar].all()
+            dictexar['numb%sstar' % strgelem][0][k] = indxexarstar.size
+            indxexarstartran = np.where((namestar == dictexar['namestar'][0]) & dictexar['booltran'][0])[0]
+            dictexar['numb%stranstar' % strgelem][0][k] = indxexarstartran.size
+            #dictexar['booltrantotl'][0][k] = dictexar['booltran'][0][indxexarstar].all()
         
-        objticrs = astropy.coordinates.SkyCoord(ra=dictexar['rascstar'], \
-                                               dec=dictexar['declstar'], frame='icrs', unit='deg')
+        objticrs = astropy.coordinates.SkyCoord(ra=dictexar['rascstar'][0], \
+                                               dec=dictexar['declstar'][0], frame='icrs', unit='deg')
         
         # transit duty cycle
-        dictexar['dcyc'] = dictexar['duratrantotl'] / dictexar['pericomp'] / 24.
+        dictexar['dcyc'][0] = dictexar['duratrantotl'][0] / dictexar['pericomp'][0] / 24.
         
         # galactic longitude
-        dictexar['lgalstar'] = np.array([objticrs.galactic.l])[0, :]
+        dictexar['lgalstar'][0] = np.array([objticrs.galactic.l])[0, :]
         
         # galactic latitude
-        dictexar['bgalstar'] = np.array([objticrs.galactic.b])[0, :]
+        dictexar['bgalstar'][0] = np.array([objticrs.galactic.b])[0, :]
         
         # ecliptic longitude
-        dictexar['loecstar'] = np.array([objticrs.barycentricmeanecliptic.lon.degree])[0, :]
+        dictexar['loecstar'][0] = np.array([objticrs.barycentricmeanecliptic.lon.degree])[0, :]
         
         # ecliptic latitude
-        dictexar['laecstar'] = np.array([objticrs.barycentricmeanecliptic.lat.degree])[0, :]
+        dictexar['laecstar'][0] = np.array([objticrs.barycentricmeanecliptic.lat.degree])[0, :]
 
         # radius ratio
-        dictexar['rratcomp'] = dictexar[strgradielem] / dictexar['radistar'] / dictfact['rsre']
+        dictexar['rratcomp'][0] = dictexar[strgradielem][0] / dictexar['radistar'][0] / dictfact['rsre']
         
         # sum of the companion and stellar radii divided by the semi-major axis
-        dictexar['rsmacomp'] = (dictexar[strgradielem] / dictfact['rsre'] + dictexar['radistar']) / (dictexar['smaxcomp'] * dictfact['aurs'])
-
+        dictexar['rsmacomp'][0] = (dictexar[strgradielem][0] / dictfact['rsre'] + dictexar['radistar'][0]) / (dictexar['smaxcomp'][0] * dictfact['aurs'])
+        
         # calculate TSM and ESM
         calc_tsmmesmm(dictexar, strgelem=strgelem)
         
-        indxnonntran = np.where(~dictexar['booltran'])[0]
-        dictexar['esmm'][indxnonntran] = np.nan
-        dictexar['tsmm'][indxnonntran] = np.nan
+        indxnonntran = np.where(~dictexar['booltran'][0])[0]
+        dictexar['esmm'][0][indxnonntran] = np.nan
+        dictexar['tsmm'][0][indxnonntran] = np.nan
         
         # surface gravity of the companion
-        dictexar['logg' + strgelem] = dictexar[strgmasselem] / dictexar[strgradielem]**2
+        dictexar['loggcomp'][0] = np.log10(9.8 * dictexar[strgmasselem][0] / dictexar[strgradielem][0]**2)
 
     return dictexar
 
