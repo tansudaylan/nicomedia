@@ -1705,9 +1705,9 @@ def retr_noistess(magtinpt, typeoutp='intplite', typeinst='TESS'):
     if typeoutp == 'calcspoc':
         pass
     
-    if typeinst == 'TESS' or typeinst == 'TGEO-IR':
+    if typeinst == 'TESS':
         pass
-    elif typeinst in ['TGEO-UV', 'TGEO-VIS']:
+    elif typeinst in ['TESS-GEO-UV', 'TESS-GEO-VIS']:
         nois *= 0.2
     else:
         print('typeinst')
