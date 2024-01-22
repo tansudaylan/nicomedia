@@ -1702,14 +1702,19 @@ def retr_noistess(magtinpt, typeoutp='intplite', typeinst='TESS'):
         magt = np.array([ 2.,  4.,  6.,  8.,  10.,  12., 14., 16.])
         objtspln = scipy.interpolate.interp1d(magt, nois, fill_value='extrapolate')
         nois = objtspln(magtinpt)
-    if typeoutp == 'calcspoc':
+    elif typeoutp == 'calcspoc':
         pass
-    
+    else:
+        raise Exception('')
+
     if typeinst == 'TESS':
         pass
     elif typeinst in ['TESS-GEO-UV', 'TESS-GEO-VIS']:
         nois *= 0.2
     else:
+        print('')
+        print('')
+        print('')
         print('typeinst')
         print(typeinst)
         raise Exception('')
@@ -1876,7 +1881,7 @@ def retr_dictpoplstarcomp( \
         dictpopl['star'][namepoplstartotl]['idenstar'] = dictpopl['star'][namepoplstartotl]['TICID']
     
 
-    elif typepoplsyst == 'Synthetic':
+    elif typepoplsyst == 'SyntheticPopulation':
         
         if numbsyst is None:
             numbsyst = 10000
