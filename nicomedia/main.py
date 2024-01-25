@@ -343,6 +343,18 @@ def retr_dictpopltic8( \
     #    gdat.dictfeat['true']['ssys']['massstar'][indx] = 1.
     #    gdat.dictfeat['true']['totl']['tmag'] = dicttic8['tmag']
         
+    # check if dictquer is properly defined, whose leaves should be a list of two items (of values and labels, respectively)
+    if booldiag:
+        for name in dictquer:
+            for nameseco in dictquer[name]:
+                if len(dictquer[name][nameseco]) != 2 or len(dictquer[name][nameseco][1]) > 0 and not isinstance(dictquer[name][nameseco][1][1], str):
+                    print('dictquer[name][nameseco]')
+                    print(dictquer[name][nameseco])
+                    print('')
+                    print('')
+                    print('')
+                    raise Exception('dictquer is not properly defined.')
+
     return dictquer
 
 
@@ -1747,12 +1759,20 @@ def retr_subp(dictpopl, dictnumbsamp, dictindxsamp, namepoplinit, namepoplfinl, 
 
     dictpopl[namepoplfinl] = dict()
     for name in dictpopl[namepoplinit].keys():
+        dictpopl[namepoplfinl][name] = [[], []]
+        
+        # copy the subset of the array
         
         if indx.size > 0:
-            dictpopl[namepoplfinl][name] = dictpopl[namepoplinit][name][indx]
+            print('name')
+            print(name)
+            dictpopl[namepoplfinl][name][0] = dictpopl[namepoplinit][name][0][indx]
         else:
-            dictpopl[namepoplfinl][name] = np.array([])
+            dictpopl[namepoplfinl][name][0] = np.array([])
 
+        # copy the unit
+        dictpopl[namepoplfinl][name][1] =  dictpopl[namepoplinit][name][1]
+    
     dictindxsamp[namepoplinit][namepoplfinl] = indx
     dictnumbsamp[namepoplfinl] = indx.size
     dictindxsamp[namepoplfinl] = dict()
@@ -1888,23 +1908,25 @@ def retr_dictpoplstarcomp( \
         
         dictpopl['star'][namepoplstartotl] = dict()
         
-        dictpopl['star'][namepoplstartotl]['distsyst'] = tdpy.icdf_powr(np.random.rand(numbsyst), 100., 7000., -2.)
+        dictpopl['star'][namepoplstartotl]['distsyst'] = [tdpy.icdf_powr(np.random.rand(numbsyst), 100., 7000., -2.), 'pc']
         
         if booltoyysunn:
-            dictpopl['star'][namepoplstartotl]['radistar'] = np.ones(numbsyst)
-            dictpopl['star'][namepoplstartotl]['massstar'] = np.ones(numbsyst)
-            dictpopl['star'][namepoplstartotl]['densstar'] = 1.4 * np.ones(numbsyst)
+            dictpopl['star'][namepoplstartotl]['radistar'] = [np.ones(numbsyst), '$R_{\odot}$']
+            dictpopl['star'][namepoplstartotl]['massstar'] = [np.ones(numbsyst), '$M_{\odot}$']
+            dictpopl['star'][namepoplstartotl]['densstar'] = [1.4 * np.ones(numbsyst), 'g cm$^{-3}$']
         else:
-            dictpopl['star'][namepoplstartotl]['massstar'] = tdpy.icdf_powr(np.random.rand(numbsyst), 0.1, 10., 2.)
-            dictpopl['star'][namepoplstartotl]['densstar'] = 1.4 * (1. / dictpopl['star'][namepoplstartotl]['massstar'])**(0.7)
-            dictpopl['star'][namepoplstartotl]['radistar'] = (1.4 * dictpopl['star'][namepoplstartotl]['massstar'] / dictpopl['star'][namepoplstartotl]['densstar'])**(1. / 3.)
+            dictpopl['star'][namepoplstartotl]['massstar'] = [tdpy.icdf_powr(np.random.rand(numbsyst), 0.1, 10., 2.), '$M_{\odot}$']
+            dictpopl['star'][namepoplstartotl]['densstar'] = [1.4 * (1. / dictpopl['star'][namepoplstartotl]['massstar'][0])**(0.7), 'g cm$^{-3}$']
+            dictpopl['star'][namepoplstartotl]['radistar'] = [(1.4 * dictpopl['star'][namepoplstartotl]['massstar'][0] / \
+                                                                                        dictpopl['star'][namepoplstartotl]['densstar'][0])**(1. / 3.), '$R_{\odot}$']
         
-        dictpopl['star'][namepoplstartotl]['coeflmdklinr'] = 0.4 * np.ones_like(dictpopl['star'][namepoplstartotl]['densstar'])
-        dictpopl['star'][namepoplstartotl]['coeflmdkquad'] = 0.25 * np.ones_like(dictpopl['star'][namepoplstartotl]['densstar'])
+        dictpopl['star'][namepoplstartotl]['coeflmdklinr'] = [0.4 * np.ones(numbsyst), '']
+        dictpopl['star'][namepoplstartotl]['coeflmdkquad'] = [0.25 * np.ones(numbsyst), '']
 
-        dictpopl['star'][namepoplstartotl]['lumistar'] = dictpopl['star'][namepoplstartotl]['massstar']**4
+        dictpopl['star'][namepoplstartotl]['lumistar'] = [dictpopl['star'][namepoplstartotl]['massstar'][0]**4, '$L_{\odot}$']
         
-        dictpopl['star'][namepoplstartotl]['tmag'] = 1. * (-2.5) * np.log10(dictpopl['star'][namepoplstartotl]['lumistar'] / dictpopl['star'][namepoplstartotl]['distsyst']**2)
+        dictpopl['star'][namepoplstartotl]['tmag'] = [1. * (-2.5) * np.log10(dictpopl['star'][namepoplstartotl]['lumistar'][0] / \
+                                                                                        dictpopl['star'][namepoplstartotl]['distsyst'][0]**2), '']
         
         if typepoplsyst == 'lsstwfds':
             dictpopl['star'][namepoplstartotl]['rmag'] = -2.5 * np.log10(dictpopl['star'][namepoplstartotl]['lumistar'] / dictpopl['star'][namepoplstartotl]['distsyst']**2)
@@ -1922,7 +1944,7 @@ def retr_dictpoplstarcomp( \
         raise Exception('Undefined typepoplsyst.')
     
     # number of stars
-    numbstar = dictpopl['star'][namepoplstartotl]['radistar'].size
+    numbstar = dictpopl['star'][namepoplstartotl]['radistar'][0].size
     
     dictstarnumbsamp[namepoplstartotl] = numbstar
 
@@ -1930,7 +1952,9 @@ def retr_dictpoplstarcomp( \
     indxsyst = np.arange(numbsyst)
 
     # total mass
-    dictpopl['star'][namepoplstartotl]['masssyst'] = np.copy(dictpopl['star'][namepoplstartotl]['massstar'])
+    dictpopl['star'][namepoplstartotl]['masssyst'] = [[], []]
+    dictpopl['star'][namepoplstartotl]['masssyst'][0] = np.copy(dictpopl['star'][namepoplstartotl]['massstar'][0])
+    dictpopl['star'][namepoplstartotl]['masssyst'][1] = dictpopl['star'][namepoplstartotl]['massstar'][1]
     
     dictindx = dict()
     dictnumbsamp = dict()
@@ -2002,16 +2026,16 @@ def retr_dictpoplstarcomp( \
             
             if typesyst.startswith('PlanetarySystem'):
                 # mean number of companions per star
-                dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean] = 0.5 * dictpopl[strgbody][namepoplstartotl]['massstar']**(-1.)
+                dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean] = 0.5 * dictpopl[strgbody][namepoplstartotl]['massstar'][0]**(-1.)
             if typesyst == 'StarFlaring':
                 # mean number of flares per star
-                dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean] = 0.5 * dictpopl[strgbody][namepoplstartotl]['massstar']**(-1.)
+                dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean] = 0.5 * dictpopl[strgbody][namepoplstartotl]['massstar'][0]**(-1.)
             
             # mean number per star
-            dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean] = 0.5 * dictpopl[strgbody][namepoplstartotl]['massstar']**(-1.)
+            dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean] = 0.5 * dictpopl[strgbody][namepoplstartotl]['massstar'][0]**(-1.)
             
             # number per star
-            dictpopl[strgbody][namepoplstartotl][strgnumblimbbody] = np.random.poisson(dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean])
+            dictpopl[strgbody][namepoplstartotl][strgnumblimbbody] = np.random.poisson(dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean][0])
             
             if booldiag:
                 if maxmnumbcompstar is not None and minmnumbcompstar is not None:
@@ -2471,6 +2495,18 @@ def retr_dictpoplstarcomp( \
         dictnico['listnamefeatlimb'] = np.array(list(dictpopl[strglimb][namepopllimbtotl].keys()))
         dictnico['listnamefeatlimbonly'] = np.setdiff1d(dictnico['listnamefeatlimb'], dictnico['listnamefeatbody'])
     
+    # check if dictpopl is properly defined, whose leaves should be a list of two items (of values and labels, respectively)
+    if booldiag:
+        for name in dictpopl:
+            for nameseco in dictpopl[name]:
+                if len(dictpopl[name][nameseco]) != 2 or len(dictpopl[name][nameseco][1]) > 0 and not isinstance(dictpopl[name][nameseco][1][1], str):
+                    print('dictpopl[name][nameseco]')
+                    print(dictpopl[name][nameseco])
+                    print('')
+                    print('')
+                    print('')
+                    raise Exception('dictpopl is not properly defined.')
+
     dictnico['dictpopl'] = dictpopl
     dictnico['dictindx'] = dictindx
     dictnico['dictnumbsamp'] = dictnumbsamp
