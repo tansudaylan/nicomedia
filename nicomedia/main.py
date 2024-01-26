@@ -2123,6 +2123,8 @@ def retr_dictpoplstarcomp( \
             for namefeat in dictpopl[strgbody][namepoplstartotl].keys():
                 print('namefeat')
                 print(namefeat)
+                print('dictpopl[strglimb][namepopllimbtotl][namefeat][0]')
+                summgene(dictpopl[strglimb][namepopllimbtotl][namefeat][0])
                 dictpopl[strglimb][namepopllimbtotl][namefeat][0][dictindx[strglimb][strgbody][k]] = dictpopl[strgbody][namepoplstartotl][namefeat][0][k]
             
             if strglimb == 'comp':
@@ -2250,8 +2252,8 @@ def retr_dictpoplstarcomp( \
                         
             rsum = dictpopl[strglimb][namepopllimbtotl]['radistar']
             if not boolsystcosc:
-                rsum += dictpopl[strglimb][namepopllimbtotl]['radicomp'] / dictfact['rsre']    
-            dictpopl[strglimb][namepopllimbtotl]['rsmacomp'] = rsum / dictpopl[strglimb][namepopllimbtotl]['smaxcomp'] / dictfact['aurs']
+                rsum += dictpopl[strglimb][namepopllimbtotl]['radicomp'][0] / dictfact['rsre']    
+            dictpopl[strglimb][namepopllimbtotl]['rsmacomp'][0] = rsum / dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0] / dictfact['aurs']
             
             # orbital inclinations of the companions
             dictpopl[strglimb][namepopllimbtotl]['inclcomp'] = 180. / np.pi * np.arccos(dictpopl[strglimb][namepopllimbtotl]['cosicomp'])
