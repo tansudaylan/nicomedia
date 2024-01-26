@@ -1770,6 +1770,9 @@ def retr_subp(dictpopl, dictnumbsamp, dictindxsamp, namepoplinit, namepoplfinl, 
         else:
             dictpopl[namepoplfinl][name][0] = np.array([])
 
+        print('name')
+        print(name)
+
         # copy the unit
         dictpopl[namepoplfinl][name][1] =  dictpopl[namepoplinit][name][1]
     
@@ -1932,8 +1935,8 @@ def retr_dictpoplstarcomp( \
             dictpopl['star'][namepoplstartotl]['rmag'] = -2.5 * np.log10(dictpopl['star'][namepoplstartotl]['lumistar'] / dictpopl['star'][namepoplstartotl]['distsyst']**2)
             
             indx = np.where((dictpopl['star'][namepoplstartotl]['rmag'] < 24.) & (dictpopl['star'][namepoplstartotl]['rmag'] > 15.))[0]
-            for name in ['distsyst', 'rmag', 'massstar', 'densstar', 'radistar', 'lumistar']:
-                dictpopl['star'][namepoplstartotl][name] = dictpopl['star'][namepoplstartotl][name][indx]
+            for namefeat in ['distsyst', 'rmag', 'massstar', 'densstar', 'radistar', 'lumistar']:
+                dictpopl['star'][namepoplstartotl][namefeat][0] = dictpopl['star'][namepoplstartotl][namefeat][0][indx]
 
     else:
         print('')
@@ -2026,16 +2029,16 @@ def retr_dictpoplstarcomp( \
             
             if typesyst.startswith('PlanetarySystem'):
                 # mean number of companions per star
-                dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean] = 0.5 * dictpopl[strgbody][namepoplstartotl]['massstar'][0]**(-1.)
+                dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean] = [0.5 * dictpopl[strgbody][namepoplstartotl]['massstar'][0]**(-1.), '']
             if typesyst == 'StarFlaring':
                 # mean number of flares per star
-                dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean] = 0.5 * dictpopl[strgbody][namepoplstartotl]['massstar'][0]**(-1.)
+                dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean] = [0.5 * dictpopl[strgbody][namepoplstartotl]['massstar'][0]**(-1.), '']
             
             # mean number per star
-            dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean] = 0.5 * dictpopl[strgbody][namepoplstartotl]['massstar'][0]**(-1.)
+            dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean] = [0.5 * dictpopl[strgbody][namepoplstartotl]['massstar'][0]**(-1.), '']
             
             # number per star
-            dictpopl[strgbody][namepoplstartotl][strgnumblimbbody] = np.random.poisson(dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean][0])
+            dictpopl[strgbody][namepoplstartotl][strgnumblimbbody] = [np.random.poisson(dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean][0]), '']
             
             if booldiag:
                 if maxmnumbcompstar is not None and minmnumbcompstar is not None:
@@ -2046,10 +2049,10 @@ def retr_dictpoplstarcomp( \
                         raise Exception('maxmnumbcompstar < minmnumbcompstar')
 
             if minmnumbcompstar is not None:
-                dictpopl[strgbody][namepoplstartotl][strgnumblimbbody] = np.maximum(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody], minmnumbcompstar)
+                dictpopl[strgbody][namepoplstartotl][strgnumblimbbody] = [np.maximum(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0], minmnumbcompstar), '']
 
             if maxmnumbcompstar is not None:
-                dictpopl[strgbody][namepoplstartotl][strgnumblimbbody] = np.minimum(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody], maxmnumbcompstar)
+                dictpopl[strgbody][namepoplstartotl][strgnumblimbbody] = [np.minimum(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0], maxmnumbcompstar), '']
 
         elif typesyst == 'CompactObjectStellarCompanion' or typesyst == 'StellarBinary':
             # number of companions per star
@@ -2064,18 +2067,18 @@ def retr_dictpoplstarcomp( \
             raise Exception('typesyst is undefined.')
     
         # Boolean flag of occurence
-        dictpopl[strgbody][namepoplstartotl]['booloccu'] = dictpopl[strgbody][namepoplstartotl][strgnumblimbbody] > 0
+        dictpopl[strgbody][namepoplstartotl]['booloccu'] = [dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0] > 0, '']
     
         # subpopulation where companions or flares occur
-        indx = np.where(dictpopl[strgbody][namepoplstartotl]['booloccu'])[0]
+        indx = np.where(dictpopl[strgbody][namepoplstartotl]['booloccu'][0])[0]
         retr_subp(dictpopl[strgbody], dictstarnumbsamp, dictstarindxsamp, namepoplstartotl, namepoplstaroccu, indx)
     
         # indices of companions or flares for each star
         dictindx[strglimb] = dict()
         dictindx[strglimb][strgbody] = [[] for k in indxsyst]
         cntr = 0
-        for k in range(len(dictpopl[strgbody][namepoplstartotl]['radistar'])):
-            dictindx[strglimb][strgbody][k] = np.arange(cntr, cntr + dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k]).astype(int)
+        for k in range(len(dictpopl[strgbody][namepoplstartotl]['radistar'][0])):
+            dictindx[strglimb][strgbody][k] = np.arange(cntr, cntr + dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]).astype(int)
             cntr += dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k]
         dictnumbsamp[strglimb][namepopllimbtotl] = cntr
     
@@ -2100,12 +2103,12 @@ def retr_dictpoplstarcomp( \
             raise Exception('')
 
         for name in listnamecatr:
-            dictpopl[strglimb][namepopllimbtotl][name] = np.empty(dictnumbsamp[strglimb][namepopllimbtotl])
+            dictpopl[strglimb][namepopllimbtotl][name] = [np.empty(dictnumbsamp[strglimb][namepopllimbtotl]), '']
 
         if booldiag:
             cntr = 0
-            for k in range(len(dictindx[strglimb][strgbody])):
-                cntr += dictindx[strglimb][strgbody][k].size
+            for k in range(len(dictindx[strglimb][strgbody][0])):
+                cntr += dictindx[strglimb][strgbody][0][k].size
             if cntr != dictnumbsamp[strglimb][namepopllimbtotl]:
                 raise Exception('')
     
@@ -2117,41 +2120,43 @@ def retr_dictpoplstarcomp( \
                 continue
 
             # load star features into component features
-            for name in dictpopl[strgbody][namepoplstartotl].keys():
-                dictpopl[strglimb][namepopllimbtotl][name][dictindx[strglimb][strgbody][k]] = dictpopl[strgbody][namepoplstartotl][name][k]
+            for namefeat in dictpopl[strgbody][namepoplstartotl].keys():
+                print('namefeat')
+                print(namefeat)
+                dictpopl[strglimb][namepopllimbtotl][namefeat][0][dictindx[strglimb][strgbody][k]] = dictpopl[strgbody][namepoplstartotl][namefeat][0][k]
             
             if strglimb == 'comp':
 
+                numb = dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]
+
                 # eccentricities
-                dictpopl[strglimb][namepopllimbtotl]['eccecomp'][dictindx[strglimb][strgbody][k]] = np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k])
+                dictpopl[strglimb][namepopllimbtotl]['eccecomp'][0][dictindx[strglimb][strgbody][k]] = np.random.rand(numb)
                 
                 # arguments of periapsis
-                dictpopl[strglimb][namepopllimbtotl]['arpacomp'][dictindx[strglimb][strgbody][k]] = 2. * np.pi * np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k])
+                dictpopl[strglimb][namepopllimbtotl]['arpacomp'][0][dictindx[strglimb][strgbody][k]] = 2. * np.pi * np.random.rand(numb)
                 
                 # cosine of orbital inclinations
-                dictpopl[strglimb][namepopllimbtotl]['cosicomp'][dictindx[strglimb][strgbody][k]] = np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k]) * maxmcosicomp
+                dictpopl[strglimb][namepopllimbtotl]['cosicomp'][0][dictindx[strglimb][strgbody][k]] = maxmcosicomp * np.random.rand(numb)
                 
                 # longtides of ascending node
-                dictpopl[strglimb][namepopllimbtotl]['loancomp'][dictindx[strglimb][strgbody][k]] = 2. * np.pi * np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k])
+                dictpopl[strglimb][namepopllimbtotl]['loancomp'][0][dictindx[strglimb][strgbody][k]] = 2. * np.pi * np.random.rand(numb)
                 
                 # companion mass
-                dictpopl[strglimb][namepopllimbtotl]['masscomp'][dictindx[strglimb][strgbody][k]] = \
-                                                                    tdpy.util.icdf_powr(np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k]), \
-                                                                                                                                       minmmasscomp, maxmmasscomp, 2.)
+                dictpopl[strglimb][namepopllimbtotl]['masscomp'][0][dictindx[strglimb][strgbody][k]] = tdpy.util.icdf_powr(np.random.rand(numb), minmmasscomp, maxmmasscomp, 2.)
                 
                 if boolsystpsys or typesyst == 'StellarBinary':
                     # companion radius
-                    dictpopl[strglimb][namepopllimbtotl]['radicomp'][dictindx[strglimb][strgbody][k]] = \
-                                                        retr_radifrommass(dictpopl[strglimb][namepopllimbtotl]['masscomp'][dictindx[strglimb][strgbody][k]])
+                    dictpopl[strglimb][namepopllimbtotl]['radicomp'][0][dictindx[strglimb][strgbody][k]] = \
+                                                        retr_radifrommass(dictpopl[strglimb][namepopllimbtotl]['masscomp'][0][dictindx[strglimb][strgbody][k]])
         
                     # companion density
-                    dictpopl[strglimb][namepopllimbtotl]['denscomp'][dictindx[strglimb][strgbody][k]] = \
-                                        5.51 * dictpopl[strglimb][namepopllimbtotl]['masscomp'][dictindx[strglimb][strgbody][k]] / \
-                                                                                           dictpopl[strglimb][namepopllimbtotl]['radicomp'][dictindx[strglimb][strgbody][k]]**3
+                    dictpopl[strglimb][namepopllimbtotl]['denscomp'][0][dictindx[strglimb][strgbody][k]] = \
+                                        5.51 * dictpopl[strglimb][namepopllimbtotl]['masscomp'][0][dictindx[strglimb][strgbody][k]] / \
+                                                                                           dictpopl[strglimb][namepopllimbtotl]['radicomp'][0][dictindx[strglimb][strgbody][k]]**3
                 
                 # total mass
                 if boolsystcosc or typesyst == 'StellarBinary':
-                    dictpopl[strgbody][namepoplstartotl]['masssyst'][k] += np.sum(dictpopl[strglimb][namepopllimbtotl]['masscomp'][dictindx[strglimb][strgbody][k]])
+                    dictpopl[strgbody][namepoplstartotl]['masssyst'][k] += np.sum(dictpopl[strglimb][namepopllimbtotl]['masscomp'][0][dictindx[strglimb][strgbody][k]])
                 
                 if typesamporbtcomp == 'peri':
                 
@@ -2164,17 +2169,17 @@ def retr_dictpoplstarcomp( \
                         else:
                             peri = ratiperi[mm-1] * listpericomp[mm-1]
                         listpericomp.append(peri)
-                    dictpopl[strglimb][namepopllimbtotl]['pericomp'][dictindx[strglimb][strgbody][k]] = np.array(listpericomp)
+                    dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]] = np.array(listpericomp)
 
                     if booldiag:
-                        ratiperi = dictpopl[strglimb][namepopllimbtotl]['pericomp'][dictindx[strglimb][strgbody][k]][1:] / \
-                                                    dictpopl[strglimb][namepopllimbtotl]['pericomp'][dictindx[strglimb][strgbody][k]][:-1]
+                        ratiperi = dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]][1:] / \
+                                                    dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]][:-1]
                         indx = np.where(ratiperi < 1.2)[0]
                         if indx.size > 0:
                             print('indx')
                             summgene(indx)
                             print('dictpopl[comp][namepopllimbtotl][pericomp][dictindx[strglimb][strgbody][k]]')
-                            print(dictpopl[strglimb][namepopllimbtotl]['pericomp'][dictindx[strglimb][strgbody][k]])
+                            print(dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]])
                             print('dictpopl[star][namepoplstartotl][numbcompstar][k]')
                             print(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k])
                             raise Exception('')
@@ -2184,8 +2189,8 @@ def retr_dictpoplstarcomp( \
                     else:
                         factnonk = 1.
 
-                    dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][dictindx[strglimb][strgbody][k]] = \
-                                            retr_smaxkepl(dictpopl[strglimb][namepopllimbtotl]['pericomp'][dictindx[strglimb][strgbody][k]], \
+                    dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0][dictindx[strglimb][strgbody][k]] = \
+                                            retr_smaxkepl(dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]], \
                                                                                                                 dictpopl[strgbody][namepoplstartotl]['masssyst'][k], factnonk=factnonk)
                 
                 else:
@@ -2196,44 +2201,44 @@ def retr_dictpoplstarcomp( \
                     #    densstar = 1.
                     #dictpopl[strglimb][namepopllimbtotl]['radiroch'][k] = retr_radiroch(radistar, densstar, denscomp)
                     #minmsmax = 2. * dictpopl[strglimb][namepopllimbtotl]['radiroch'][k]
-                    dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][dictindx[strglimb][strgbody][k]] = dictpopl[strgbody][namepoplstartotl]['radistar'][k] * \
+                    dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0][dictindx[strglimb][strgbody][k]] = dictpopl[strgbody][namepoplstartotl]['radistar'][k] * \
                                                                                  tdpy.util.icdf_powr(np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k]), \
                                                                                                     minmsmaxradistar, maxmsmaxradistar, 2.) / dictfact['aurs']
                     
                     if typesyst == 'PlanetarySystemWithNonKeplerianObjects':
                         factnonk = tdpy.util.icdf_powr(np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k]), 0.1, 1., -2.)
-                        dictpopl[strglimb][namepopllimbtotl]['factnonkcomp'][dictindx[strglimb][strgbody][k]] = factnonk
+                        dictpopl[strglimb][namepopllimbtotl]['factnonkcomp'][0][dictindx[strglimb][strgbody][k]] = factnonk
                     else:
                         factnonk = 1.
                     
-                    dictpopl[strglimb][namepopllimbtotl]['pericomp'][dictindx[strglimb][strgbody][k]] = \
-                                            retr_perikepl(dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][dictindx[strglimb][strgbody][k]], \
+                    dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]] = \
+                                            retr_perikepl(dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0][dictindx[strglimb][strgbody][k]], \
                                                                                                          dictpopl[strgbody][namepoplstartotl]['masssyst'][k], factnonk=factnonk)
                     
         
                 
                 if booldiag:
-                    if not np.isfinite(dictpopl[strglimb][namepopllimbtotl]['pericomp'][dictindx[strglimb][strgbody][k]]).all():
+                    if not np.isfinite(dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]]).all():
                         print('')
                         print('')
                         print('')
                         print('dictpopl[comp][namepopllimbtotl][masscomp][dictindx[comp][star][k]]')
-                        print(dictpopl[strglimb][namepopllimbtotl]['masscomp'][dictindx[strglimb][strgbody][k]])
+                        print(dictpopl[strglimb][namepopllimbtotl]['masscomp'][0][dictindx[strglimb][strgbody][k]])
                         print('dictpopl[comp][namepopllimbtotl][masssyst][dictindx[comp][star][k]]')
                         print(dictpopl[strglimb][namepopllimbtotl]['masssyst'][dictindx[strglimb][strgbody][k]])
                         print('dictpopl[comp][namepopllimbtotl][smaxcomp][dictindx[comp][star][k]]')
-                        print(dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][dictindx[strglimb][strgbody][k]])
+                        print(dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0][dictindx[strglimb][strgbody][k]])
                         print('dictpopl[comp][namepopllimbtotl][pericomp][dictindx[comp][star][k]]')
-                        print(dictpopl[strglimb][namepopllimbtotl]['pericomp'][dictindx[strglimb][strgbody][k]])
+                        print(dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]])
                         raise Exception('')
 
                 # conjunction epochs
                 if epocmtracomp is not None:
-                    dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][dictindx[strglimb][strgbody][k]] = np.full(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k], epocmtracomp)
+                    dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][0][dictindx[strglimb][strgbody][k]] = np.full(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k], epocmtracomp)
                 else:
-                    dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][dictindx[strglimb][strgbody][k]] = 1e8 * np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k])
+                    dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][0][dictindx[strglimb][strgbody][k]] = 1e8 * np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k])
                 if timeepoc is not None:
-                    dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][dictindx[strglimb][strgbody][k]] = dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][k] + \
+                    dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][0][dictindx[strglimb][strgbody][k]] = dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][k] + \
                                                    dictpopl[strglimb][namepopllimbtotl]['pericomp'][k] * \
                                                    np.round((dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][k] - timeepoc) / dictpopl[strglimb][namepopllimbtotl]['pericomp'][k])
     
@@ -2336,7 +2341,7 @@ def retr_dictpoplstarcomp( \
                 cntr = 0
                 for k in range(len(dictpopl[strgbody][namepoplstartotl]['radistar'])):
                     for j in range(len(dictindx[strglimb][strgbody][k])):
-                        indxmooncompstar[k][j] = np.arange(cntr, cntr + dictpopl[strglimb][namepopllimbtotl]['numbmooncomp'][dictindx[strglimb][strgbody][k][j]]).astype(int)
+                        indxmooncompstar[k][j] = np.arange(cntr, cntr + dictpopl[strglimb][namepopllimbtotl]['numbmooncomp'][0][dictindx[strglimb][strgbody][k][j]]).astype(int)
                         cntr += int(dictpopl[strglimb][namepopllimbtotl]['numbmooncomp'][j])
                 dictmoonnumbsamp[namepoplmoontotl] = cntr
             
@@ -2354,7 +2359,7 @@ def retr_dictpoplstarcomp( \
                     numbcomp = dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k]
                     
                     # number of exomoons to the companion
-                    numbmoon = dictpopl[strglimb][namepopllimbtotl]['numbmooncomp'][dictindx[strglimb][strgbody][k]].astype(int)
+                    numbmoon = dictpopl[strglimb][namepopllimbtotl]['numbmooncomp'][0][dictindx[strglimb][strgbody][k]].astype(int)
                     for name in ['radi', 'mass', 'dens', 'peri', 'epocmtra', 'smax', 'minmsmax']:
                         dictpopl['moon'][namepoplmoontotl][name+'moon'] = np.empty(numbmoontotl)
                     
@@ -2383,8 +2388,8 @@ def retr_dictpoplstarcomp( \
                         indxmoon[j] = np.arange(numbmoon[j])
                         # properties of the moons
                         ## mass [M_E]
-                        dictpopl['moon'][namepoplmoontotl]['massmoon'][indxmooncompstar[k][j]] = dictpopl[strglimb][namepopllimbtotl]['masscomp'][dictindx[strglimb][strgbody][k][j]] * \
-                                              tdpy.icdf_powr(np.random.rand(int(dictpopl[strglimb][namepopllimbtotl]['numbmooncomp'][dictindx[strglimb][strgbody][k][j]])), 0.005, 0.1, 2.)
+                        dictpopl['moon'][namepoplmoontotl]['massmoon'][indxmooncompstar[k][j]] = dictpopl[strglimb][namepopllimbtotl]['masscomp'][0][dictindx[strglimb][strgbody][k][j]] * \
+                                              tdpy.icdf_powr(np.random.rand(int(dictpopl[strglimb][namepopllimbtotl]['numbmooncomp'][0][dictindx[strglimb][strgbody][k][j]])), 0.005, 0.1, 2.)
                         
                         ## radii [R_E]
                         dictpopl['moon'][namepoplmoontotl]['radimoon'][indxmooncompstar[k][j]] = \
@@ -2396,8 +2401,8 @@ def retr_dictpoplstarcomp( \
                         
                         # minimum semi-major axes for the moons
                         dictpopl['moon'][namepoplmoontotl]['minmsmaxmoon'][indxmooncompstar[k][j]] = (1. / dictfact['rsre'] / dictfact['aurs']) * \
-                                                                             retr_radiroch(dictpopl[strglimb][namepopllimbtotl]['radicomp'][dictindx[strglimb][strgbody][k][j]], \
-                                                                                                  dictpopl[strglimb][namepopllimbtotl]['denscomp'][dictindx[strglimb][strgbody][k][j]], \
+                                                                             retr_radiroch(dictpopl[strglimb][namepopllimbtotl]['radicomp'][0][dictindx[strglimb][strgbody][k][j]], \
+                                                                                           dictpopl[strglimb][namepopllimbtotl]['denscomp'][0][dictindx[strglimb][strgbody][k][j]], \
                                                                                                                   dictpopl['moon'][namepoplmoontotl]['densmoon'][indxmooncompstar[k][j]])
                         
                         if booldiag:
@@ -2413,9 +2418,9 @@ def retr_dictpoplstarcomp( \
                                 print('dictpopl[comp][namepopllimbtotl][masssyst][k]')
                                 print(dictpopl[strglimb][namepopllimbtotl]['masssyst'][k])
                                 print('dictpopl[comp][namepopllimbtotl][pericomp][dictindx[strglimb][strgbody][k][j]]')
-                                print(dictpopl[strglimb][namepopllimbtotl]['pericomp'][dictindx[strglimb][strgbody][k][j]])
+                                print(dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k][j]])
                                 print('dictpopl[comp][namepopllimbtotl][smaxcomp][dictindx[strglimb][strgbody][k][j]]')
-                                print(dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][dictindx[strglimb][strgbody][k][j]])
+                                print(dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0][dictindx[strglimb][strgbody][k][j]])
                                 print('dictpopl[comp][namepopllimbtotl][radihill][dictindx[strglimb][strgbody][k][j]]')
                                 print(dictpopl[strglimb][namepopllimbtotl]['radihill'][dictindx[strglimb][strgbody][k][j]])
                                 print('dictpopl[comp][namepopllimbtotl][maxmsmaxmoon][dictindx[strglimb][strgbody][k][j]]')
@@ -2429,11 +2434,11 @@ def retr_dictpoplstarcomp( \
                                 print('dictpopl[moon][namepoplmoontotl][densmoon][indxmooncompstar[k][j]]')
                                 print(dictpopl['moon'][namepoplmoontotl]['densmoon'][indxmooncompstar[k][j]])
                                 print('dictpopl[comp][namepopllimbtotl][radicomp][dictindx[strglimb][strgbody][k][j]]')
-                                print(dictpopl[strglimb][namepopllimbtotl]['radicomp'][dictindx[strglimb][strgbody][k][j]])
+                                print(dictpopl[strglimb][namepopllimbtotl]['radicomp'][0][dictindx[strglimb][strgbody][k][j]])
                                 print('dictpopl[comp][namepopllimbtotl][masscomp][dictindx[strglimb][strgbody][k][j]]')
-                                print(dictpopl[strglimb][namepopllimbtotl]['masscomp'][dictindx[strglimb][strgbody][k][j]])
+                                print(dictpopl[strglimb][namepopllimbtotl]['masscomp'][0][dictindx[strglimb][strgbody][k][j]])
                                 print('dictpopl[comp][namepopllimbtotl][denscomp][dictindx[strglimb][strgbody][k][j]]')
-                                print(dictpopl[strglimb][namepopllimbtotl]['denscomp'][dictindx[strglimb][strgbody][k][j]])
+                                print(dictpopl[strglimb][namepopllimbtotl]['denscomp'][0][dictindx[strglimb][strgbody][k][j]])
                                 raise Exception('Minimum semi-major axes for the moons are greater than the maximum semi-major axes.')
                         
                         # semi-major axes of the moons
@@ -2472,19 +2477,12 @@ def retr_dictpoplstarcomp( \
                                 print(dictpopl['moon'][namepoplmoontotl]['smaxmoon'][indxmooncompstar[k][j]])
                                 
                                 print('dictpopl[comp][namepopllimbtotl][smaxcomp][dictindx[strglimb][strgbody][k][j]]')
-                                print(dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][dictindx[strglimb][strgbody][k][j]])
+                                print(dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0][dictindx[strglimb][strgbody][k][j]])
                                 
                                 print('dictpopl[moon][namepoplmoontotl][minmsmaxmoon][indxmooncompstar[k][j]]')
                                 print(dictpopl['moon'][namepoplmoontotl]['minmsmaxmoon'][indxmooncompstar[k][j]])
                                 print('dictpopl[comp][namepopllimbtotl][maxmsmaxmoon][dictindx[strglimb][strgbody][k][j]]')
                                 print(dictpopl[strglimb][namepopllimbtotl]['maxmsmaxmoon'][dictindx[strglimb][strgbody][k][j]])
-                                
-                                #print('dictpopl[comp][namepopllimbtotl][radicomp][dictindx[strglimb][strgbody][k][j]]')
-                                #print(dictpopl[strglimb][namepopllimbtotl]['radicomp'][dictindx[strglimb][strgbody][k][j]])
-                                #print('dictpopl[comp][namepopllimbtotl][denscomp][dictindx[strglimb][strgbody][k][j]]')
-                                #print(dictpopl[strglimb][namepopllimbtotl]['denscomp'][dictindx[strglimb][strgbody][k][j]])
-                                #print('dictpopl[moon][namepoplmoontotl][densmoon][indxmooncompstar[k][j]]')
-                                #print(dictpopl['moon'][namepoplmoontotl]['densmoon'][indxmooncompstar[k][j]])
                                 
                                 raise Exception('Semi-major axis of a moon is larger than 0.7 times the Hill radius of the companion.')
             
