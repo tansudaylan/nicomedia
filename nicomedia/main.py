@@ -2088,6 +2088,7 @@ def retr_dictpoplstarcomp( \
     
         dictnumbsamp[strglimb][namepopllimbtotl] = dictpopl[strglimb][namepopllimbtotl]['radistar'].size
         
+
         listnamecatr = ['masssyst', 'radistar']
         if strglimb == 'comp':
             listnamecatr += ['pericomp', 'cosicomp', 'smaxcomp', 'eccecomp', 'arpacomp', 'loancomp', 'masscomp', 'epocmtracomp']
@@ -2104,6 +2105,9 @@ def retr_dictpoplstarcomp( \
 
         for name in listnamecatr:
             dictpopl[strglimb][namepopllimbtotl][name] = [np.empty(dictnumbsamp[strglimb][namepopllimbtotl]), '']
+
+        print('dictpopl[strglimb][namepopllimbtotl][distsyst][0]')
+        summgene(dictpopl[strglimb][namepopllimbtotl]['distsyst'][0])
 
         if booldiag:
             cntr = 0
@@ -2250,7 +2254,7 @@ def retr_dictpoplstarcomp( \
                 # initialize the total mass of the companion + moons system as the mass of the companion
                 dictpopl[strglimb][namepopllimbtotl]['masscompmoon'] = np.copy(dictpopl[strglimb][namepopllimbtotl]['masscomp'])
                         
-            rsum = dictpopl[strglimb][namepopllimbtotl]['radistar']
+            rsum = dictpopl[strglimb][namepopllimbtotl]['radistar'][0]
             if not boolsystcosc:
                 rsum += dictpopl[strglimb][namepopllimbtotl]['radicomp'][0] / dictfact['rsre']    
             dictpopl[strglimb][namepopllimbtotl]['rsmacomp'][0] = rsum / dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0] / dictfact['aurs']
