@@ -1764,14 +1764,9 @@ def retr_subp(dictpopl, dictnumbsamp, dictindxsamp, namepoplinit, namepoplfinl, 
         # copy the subset of the array
         
         if indx.size > 0:
-            print('name')
-            print(name)
             dictpopl[namepoplfinl][name][0] = dictpopl[namepoplinit][name][0][indx]
         else:
             dictpopl[namepoplfinl][name][0] = np.array([])
-
-        print('name')
-        print(name)
 
         # copy the unit
         dictpopl[namepoplfinl][name][1] =  dictpopl[namepoplinit][name][1]
@@ -2066,6 +2061,15 @@ def retr_dictpoplstarcomp( \
             print(typesyst)
             raise Exception('typesyst is undefined.')
     
+        if booldiag:
+            if np.isscalar(dictpopl[strgbody][namepoplstartotl]['distsyst'][0]):
+                print('')
+                print('')
+                print('')
+                print('dictpopl[strgbody][namepoplstartotl][distsyst][0]')
+                summgene(dictpopl[strgbody][namepoplstartotl]['distsyst'][0])
+                raise Exception('')
+
         # Boolean flag of occurence
         dictpopl[strgbody][namepoplstartotl]['booloccu'] = [dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0] > 0, '']
     
@@ -2084,14 +2088,14 @@ def retr_dictpoplstarcomp( \
     
         # prepare to load star features into component features
         for name in list(dictpopl[strgbody][namepoplstartotl].keys()):
-            dictpopl[strglimb][namepopllimbtotl][name] = np.empty(dictnumbsamp[strglimb][namepopllimbtotl])
+            dictpopl[strglimb][namepopllimbtotl][name] = [np.empty(dictnumbsamp[strglimb][namepopllimbtotl]), '']
     
-        dictnumbsamp[strglimb][namepopllimbtotl] = dictpopl[strglimb][namepopllimbtotl]['radistar'].size
+        dictnumbsamp[strglimb][namepopllimbtotl] = dictpopl[strglimb][namepopllimbtotl]['radistar'][0].size
         
 
         listnamecatr = ['masssyst', 'radistar']
         if strglimb == 'comp':
-            listnamecatr += ['pericomp', 'cosicomp', 'smaxcomp', 'eccecomp', 'arpacomp', 'loancomp', 'masscomp', 'epocmtracomp']
+            listnamecatr += ['pericomp', 'cosicomp', 'smaxcomp', 'eccecomp', 'arpacomp', 'loancomp', 'masscomp', 'epocmtracomp', 'rsmacomp']
             if typesyst == 'PlanetarySystemWithMoons':
                 listnamecatr += ['masscompmoon']
             if typesyst == 'PlanetarySystemWithNonKeplerianObjects':
@@ -2106,10 +2110,15 @@ def retr_dictpoplstarcomp( \
         for name in listnamecatr:
             dictpopl[strglimb][namepopllimbtotl][name] = [np.empty(dictnumbsamp[strglimb][namepopllimbtotl]), '']
 
-        print('dictpopl[strglimb][namepopllimbtotl][distsyst][0]')
-        summgene(dictpopl[strglimb][namepopllimbtotl]['distsyst'][0])
-
         if booldiag:
+            if np.isscalar(dictpopl[strglimb][namepopllimbtotl]['distsyst'][0]):
+                print('')
+                print('')
+                print('')
+                print('dictpopl[strglimb][namepopllimbtotl][distsyst][0]')
+                summgene(dictpopl[strglimb][namepopllimbtotl]['distsyst'][0])
+                raise Exception('')
+
             cntr = 0
             for k in range(len(dictindx[strglimb][strgbody][0])):
                 cntr += dictindx[strglimb][strgbody][0][k].size
@@ -2125,10 +2134,6 @@ def retr_dictpoplstarcomp( \
 
             # load star features into component features
             for namefeat in dictpopl[strgbody][namepoplstartotl].keys():
-                print('namefeat')
-                print(namefeat)
-                print('dictpopl[strglimb][namepopllimbtotl][namefeat][0]')
-                summgene(dictpopl[strglimb][namepopllimbtotl][namefeat][0])
                 dictpopl[strglimb][namepopllimbtotl][namefeat][0][dictindx[strglimb][strgbody][k]] = dictpopl[strgbody][namepoplstartotl][namefeat][0][k]
             
             if strglimb == 'comp':
@@ -2207,8 +2212,11 @@ def retr_dictpoplstarcomp( \
                     #    densstar = 1.
                     #dictpopl[strglimb][namepopllimbtotl]['radiroch'][k] = retr_radiroch(radistar, densstar, denscomp)
                     #minmsmax = 2. * dictpopl[strglimb][namepopllimbtotl]['radiroch'][k]
-                    dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0][dictindx[strglimb][strgbody][k]] = dictpopl[strgbody][namepoplstartotl]['radistar'][k] * \
-                                                                                 tdpy.util.icdf_powr(np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k]), \
+                    print('dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k]')
+                    print(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k])
+
+                    dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0][dictindx[strglimb][strgbody][k]] = dictpopl[strgbody][namepoplstartotl]['radistar'][0][k] * \
+                                                                                 tdpy.util.icdf_powr(np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]), \
                                                                                                     minmsmaxradistar, maxmsmaxradistar, 2.) / dictfact['aurs']
                     
                     if typesyst == 'PlanetarySystemWithNonKeplerianObjects':
@@ -2242,7 +2250,8 @@ def retr_dictpoplstarcomp( \
                 if epocmtracomp is not None:
                     dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][0][dictindx[strglimb][strgbody][k]] = np.full(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k], epocmtracomp)
                 else:
-                    dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][0][dictindx[strglimb][strgbody][k]] = 1e8 * np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k])
+                    dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][0][dictindx[strglimb][strgbody][k]] = \
+                                        1e8 * np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k])
                 if timeepoc is not None:
                     dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][0][dictindx[strglimb][strgbody][k]] = dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][k] + \
                                                    dictpopl[strglimb][namepopllimbtotl]['pericomp'][k] * \
@@ -2260,59 +2269,61 @@ def retr_dictpoplstarcomp( \
             dictpopl[strglimb][namepopllimbtotl]['rsmacomp'][0] = rsum / dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0] / dictfact['aurs']
             
             # orbital inclinations of the companions
-            dictpopl[strglimb][namepopllimbtotl]['inclcomp'] = 180. / np.pi * np.arccos(dictpopl[strglimb][namepopllimbtotl]['cosicomp'])
+            dictpopl[strglimb][namepopllimbtotl]['inclcomp'] = [180. / np.pi * np.arccos(dictpopl[strglimb][namepopllimbtotl]['cosicomp'][0]), 'degree']
             
-            dictpopl[strglimb][namepopllimbtotl]['inclcomp'] = 90. + (dictpopl[strglimb][namepopllimbtotl]['inclcomp'] - 90.) * \
-                                                                            (2 * np.random.randint(2, size=dictpopl[strglimb][namepopllimbtotl]['cosicomp'].size) - 1.)
+            dictpopl[strglimb][namepopllimbtotl]['inclcomp'][0] = 90. + (dictpopl[strglimb][namepopllimbtotl]['inclcomp'][0] - 90.) * \
+                                                                            (2 * np.random.randint(2, size=dictpopl[strglimb][namepopllimbtotl]['cosicomp'][0].size) - 1.)
 
             if boolsystpsys:
                 
                 if booldiag:
                     
-                    if not np.isfinite(dictpopl[strglimb][namepopllimbtotl]['radistar']).all():
+                    if not np.isfinite(dictpopl[strglimb][namepopllimbtotl]['radistar'][0]).all():
                         print('')
                         print('')
                         print('')
                         raise Exception('not np.isfinite(dictpopl[comp][namepopllimbtotl][radistar]).all()')
                     
-                    if not np.isfinite(dictpopl[strglimb][namepopllimbtotl]['radicomp']).all():
+                    if not np.isfinite(dictpopl[strglimb][namepopllimbtotl]['radicomp'][0]).all():
                         print('')
                         print('')
                         print('')
                         raise Exception('not np.isfinite(dictpopl[comp][namepopllimbtotl][radicomp]).all()')
 
                 # radius ratio
-                dictpopl[strglimb][namepopllimbtotl]['rratcomp'] = dictpopl[strglimb][namepopllimbtotl]['radicomp'] / dictpopl[strglimb][namepopllimbtotl]['radistar'] / dictfact['rsre']
+                dictpopl[strglimb][namepopllimbtotl]['rratcomp'] = [dictpopl[strglimb][namepopllimbtotl]['radicomp'][0] / \
+                                                                        dictpopl[strglimb][namepopllimbtotl]['radistar'][0] / dictfact['rsre'], '']
                 
                 if booldiag:
-                    if not np.isfinite(dictpopl[strglimb][namepopllimbtotl]['rratcomp']).all():
+                    if not np.isfinite(dictpopl[strglimb][namepopllimbtotl]['rratcomp'][0]).all():
                         print('')
                         print('')
                         print('')
                         raise Exception('not np.isfinite(dictpopl[comp][namepopllimbtotl][rratcomp]).all()')
                     
             # Boolean flag indicating whether a companion is transiting
-            dictpopl[strglimb][namepopllimbtotl]['booltran'] = dictpopl[strglimb][namepopllimbtotl]['rsmacomp'] > dictpopl[strglimb][namepopllimbtotl]['cosicomp']
+            dictpopl[strglimb][namepopllimbtotl]['booltran'] = [dictpopl[strglimb][namepopllimbtotl]['rsmacomp'][0] > dictpopl[strglimb][namepopllimbtotl]['cosicomp'][0], '']
 
             # subpopulation where object transits
-            indx = np.where(dictpopl[strglimb][namepopllimbtotl]['booltran'])[0]
+            indx = np.where(dictpopl[strglimb][namepopllimbtotl]['booltran'][0])[0]
             retr_subp(dictpopl[strglimb], dictnumbsamp[strglimb], dictindxsamp[strglimb], namepopllimbtotl, namepoplcomptran, indx)
 
             # transit duration
-            dictpopl[strglimb][namepoplcomptran]['duratrantotl'] = retr_duratrantotl(dictpopl[strglimb][namepoplcomptran]['pericomp'], \
-                                                                           dictpopl[strglimb][namepoplcomptran]['rsmacomp'], \
-                                                                           dictpopl[strglimb][namepoplcomptran]['cosicomp'])
-            dictpopl[strglimb][namepoplcomptran]['dcyc'] = dictpopl[strglimb][namepoplcomptran]['duratrantotl'] / dictpopl[strglimb][namepoplcomptran]['pericomp'] / 24.
+            dictpopl[strglimb][namepoplcomptran]['duratrantotl'] = [retr_duratrantotl(dictpopl[strglimb][namepoplcomptran]['pericomp'][0], \
+                                                                                     dictpopl[strglimb][namepoplcomptran]['rsmacomp'][0], \
+                                                                                     dictpopl[strglimb][namepoplcomptran]['cosicomp'][0]), '']
+            dictpopl[strglimb][namepoplcomptran]['dcyc'] = [dictpopl[strglimb][namepoplcomptran]['duratrantotl'][0] / dictpopl[strglimb][namepoplcomptran]['pericomp'][0] / 24., '']
             
             if boolsystcosc:
                 # amplitude of self-lensing
-                dictpopl[strglimb][namepoplcomptran]['amplslen'] = chalcedon.retr_amplslen(dictpopl[strglimb][namepoplcomptran]['pericomp'], \
-                                                                                           dictpopl[strglimb][namepoplcomptran]['radistar'], \
-                                                                                    dictpopl[strglimb][namepoplcomptran]['masscomp'], dictpopl[strglimb][namepoplcomptran]['massstar'])
+                dictpopl[strglimb][namepoplcomptran]['amplslen'] = chalcedon.retr_amplslen(dictpopl[strglimb][namepoplcomptran]['pericomp'][0], \
+                                                                                           dictpopl[strglimb][namepoplcomptran]['radistar'][0], \
+                                                                                           dictpopl[strglimb][namepoplcomptran]['masscomp'][0], \
+                                                                                           dictpopl[strglimb][namepoplcomptran]['massstar'][0])
             
             if typesyst == 'PlanetarySystem':
                 # transit depth
-                dictpopl[strglimb][namepoplcomptran]['depttrancomp'] = 1e3 * dictpopl[strglimb][namepoplcomptran]['rratcomp']**2 # [ppt]
+                dictpopl[strglimb][namepoplcomptran]['depttrancomp'] = [1e3 * dictpopl[strglimb][namepoplcomptran]['rratcomp'][0]**2, 'ppt']
             
             # define parent population's features that are valid only for transiting systems
             listtemp = ['duratrantotl', 'dcyc']
@@ -2321,15 +2332,15 @@ def retr_dictpoplstarcomp( \
             if boolsystcosc:
                 listtemp += ['amplslen']
             for strg in listtemp:
-                dictpopl[strglimb][namepopllimbtotl][strg] = np.full_like(dictpopl[strglimb][namepopllimbtotl]['pericomp'], np.nan)
-                dictpopl[strglimb][namepopllimbtotl][strg][indx] = dictpopl[strglimb][namepoplcomptran][strg]
+                dictpopl[strglimb][namepopllimbtotl][strg] = [np.full_like(dictpopl[strglimb][namepopllimbtotl]['pericomp'][0], np.nan), '']
+                dictpopl[strglimb][namepopllimbtotl][strg][0][indx] = dictpopl[strglimb][namepoplcomptran][strg][0]
 
             indxmooncompstar = [[[] for j in dictindx[strglimb][strgbody][k]] for k in indxsyst]
             if typesyst == 'PlanetarySystemWithMoons':
                 # Hill radius of the companion
-                dictpopl[strglimb][namepopllimbtotl]['radihill'] = retr_radihill(dictpopl[strglimb][namepopllimbtotl]['smaxcomp'], \
-                                                                            dictpopl[strglimb][namepopllimbtotl]['masscomp'] / dictfact['msme'], \
-                                                                            dictpopl[strglimb][namepopllimbtotl]['massstar'])
+                dictpopl[strglimb][namepopllimbtotl]['radihill'] = retr_radihill(dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0], \
+                                                                                 dictpopl[strglimb][namepopllimbtotl]['masscomp'][0] / dictfact['msme'], \
+                                                                                 dictpopl[strglimb][namepopllimbtotl]['massstar'][0])
             
                 # maximum semi-major axis of the moons 
                 dictpopl[strglimb][namepopllimbtotl]['maxmsmaxmoon'] = 0.2 * dictpopl[strglimb][namepopllimbtotl]['radihill']
@@ -2339,9 +2350,6 @@ def retr_dictpoplstarcomp( \
                 
                 # number of moons per companion
                 #dictpopl[strglimb][namepopllimbtotl]['numbmooncomp'] = np.random.poisson(dictpopl[strglimb][namepopllimbtotl]['numbmooncompmean'])
-                print('hede')
-                print('temp')
-                print('hede')
                 dictpopl[strglimb][namepopllimbtotl]['numbmooncomp'] = np.ones_like(dictpopl[strglimb][namepopllimbtotl]['numbmooncompmean'])
                 
                 cntr = 0
@@ -2501,15 +2509,23 @@ def retr_dictpoplstarcomp( \
     
     # check if dictpopl is properly defined, whose leaves should be a list of two items (of values and labels, respectively)
     if booldiag:
-        for name in dictpopl:
-            for nameseco in dictpopl[name]:
-                if len(dictpopl[name][nameseco]) != 2 or len(dictpopl[name][nameseco][1]) > 0 and not isinstance(dictpopl[name][nameseco][1][1], str):
-                    print('dictpopl[name][nameseco]')
-                    print(dictpopl[name][nameseco])
-                    print('')
-                    print('')
-                    print('')
-                    raise Exception('dictpopl is not properly defined.')
+        for namepopl in dictpopl:
+            for namespop in dictpopl[namepopl]:
+                for namefeat in dictpopl[namepopl][namespop]:
+                    if len(dictpopl[namepopl][namespop][namefeat]) != 2 or \
+                            len(dictpopl[namepopl][namespop][namefeat][1]) > 0 and not isinstance(dictpopl[namepopl][namespop][namefeat][1][1], str):
+                        print('')
+                        print('')
+                        print('')
+                        print('namepopl')
+                        print(namepopl)
+                        print('namespop')
+                        print(namespop)
+                        print('dictpopl[name][nameseco][namefeat]')
+                        print(dictpopl[name][nameseco][namefeat])
+                        print('len(dictpopl[name][nameseco][namefeat])')
+                        print(len(dictpopl[name][nameseco][namefeat]))
+                        raise Exception('dictpopl is not properly defined.')
 
     dictnico['dictpopl'] = dictpopl
     dictnico['dictindx'] = dictindx
