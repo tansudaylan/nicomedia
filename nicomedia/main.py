@@ -2212,8 +2212,6 @@ def retr_dictpoplstarcomp( \
                     #    densstar = 1.
                     #dictpopl[strglimb][namepopllimbtotl]['radiroch'][k] = retr_radiroch(radistar, densstar, denscomp)
                     #minmsmax = 2. * dictpopl[strglimb][namepopllimbtotl]['radiroch'][k]
-                    print('dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k]')
-                    print(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k])
 
                     dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0][dictindx[strglimb][strgbody][k]] = dictpopl[strgbody][namepoplstartotl]['radistar'][0][k] * \
                                                                                  tdpy.util.icdf_powr(np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]), \
