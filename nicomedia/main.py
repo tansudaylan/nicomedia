@@ -1801,7 +1801,7 @@ def retr_dictpoplstarcomp( \
                           minmnumbcompstar=1, \
                           
                           # maximum number of components per star
-                          maxmnumbcompstar=None, \
+                          maxmnumbcompstar=1, \
                           
                           # minimum ratio of semi-major axis to radius of the host star
                           minmsmaxradistar=3., \
@@ -1813,10 +1813,12 @@ def retr_dictpoplstarcomp( \
                           minmmasscomp=None, \
                           
                           # minimum orbital period, only taken into account when typesamporbtcomp == 'peri'
-                          minmpericomp=0.1, \
+                          minmpericomp=0.5, \
+                          #minmpericomp=0.1, \
                           
                           # maximum orbital period, only taken into account when typesamporbtcomp == 'peri'
-                          maxmpericomp=1000., \
+                          maxmpericomp=0.5, \
+                          #maxmpericomp=1000., \
                           
                           # Boolean flag to force all companions to be transiting
                           booltrancomp=True, \
@@ -1966,11 +1968,11 @@ def retr_dictpoplstarcomp( \
         if minmmasscomp is None:
             if boolsystcosc:
                 minmmasscomp = 5. # [Solar mass]
-            elif typesyst == 'PlanetarySystem' or typesyst == 'PlanetarySystemWithPhaseCurve' or typesyst == 'PlanetarySystemWithMoons':
+            elif typesyst == 'PlanetarySystem' or typesyst == 'PlanetarySystemEmittingCompanion' or typesyst == 'PlanetarySystemWithMoons':
                 if typesyst == 'PlanetarySystem' or typesyst == 'PlanetarySystemWithMoons':
                     # ~ Mars mass
                     minmmasscomp = 0.1 # [Earth mass]
-                if typesyst == 'PlanetarySystemWithPhaseCurve':
+                if typesyst == 'PlanetarySystemEmittingCompanion':
                     minmmasscomp = 30. # [Earth mass]
             elif typesyst == 'StellarBinary':
                 minmmasscomp = 0.5 # [Earth mass]
