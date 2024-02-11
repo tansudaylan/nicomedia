@@ -1798,7 +1798,7 @@ def retr_dictpoplstarcomp( \
                           typesamporbtcomp='smax', \
 
                           # minimum number of components per star
-                          minmnumbcompstar=None, \
+                          minmnumbcompstar=1, \
                           
                           # maximum number of components per star
                           maxmnumbcompstar=None, \
@@ -1818,8 +1818,11 @@ def retr_dictpoplstarcomp( \
                           # maximum orbital period, only taken into account when typesamporbtcomp == 'peri'
                           maxmpericomp=1000., \
                           
-                          # maximum cosine of inclination
-                          maxmcosicomp=1., \
+                          # Boolean flag to force all companions to be transiting
+                          booltrancomp=True, \
+
+                          # maximum cosine of inclination if booltrancomp is False
+                          maxmcosicomp=None, \
                           
                           # Boolean flag to include exomoons
                           boolinclmoon=False, \
@@ -2146,9 +2149,6 @@ def retr_dictpoplstarcomp( \
                 # arguments of periapsis
                 dictpopl[strglimb][namepopllimbtotl]['arpacomp'][0][dictindx[strglimb][strgbody][k]] = 2. * np.pi * np.random.rand(numb)
                 
-                # cosine of orbital inclinations
-                dictpopl[strglimb][namepopllimbtotl]['cosicomp'][0][dictindx[strglimb][strgbody][k]] = maxmcosicomp * np.random.rand(numb)
-                
                 # longtides of ascending node
                 dictpopl[strglimb][namepopllimbtotl]['loancomp'][0][dictindx[strglimb][strgbody][k]] = 2. * np.pi * np.random.rand(numb)
                 
@@ -2246,7 +2246,8 @@ def retr_dictpoplstarcomp( \
 
                 # conjunction epochs
                 if epocmtracomp is not None:
-                    dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][0][dictindx[strglimb][strgbody][k]] = np.full(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k], epocmtracomp)
+                    dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][0][dictindx[strglimb][strgbody][k]] = \
+                                                            np.full(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k], epocmtracomp)
                 else:
                     dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][0][dictindx[strglimb][strgbody][k]] = \
                                         1e8 * np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k])
@@ -2266,6 +2267,26 @@ def retr_dictpoplstarcomp( \
                 rsum += dictpopl[strglimb][namepopllimbtotl]['radicomp'][0] / dictfact['rsre']    
             dictpopl[strglimb][namepopllimbtotl]['rsmacomp'][0] = rsum / dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0] / dictfact['aurs']
             
+            if booltrancomp is True and maxmcosicomp is not None:
+                raise Exception('maxmcosicomp cannot be specified if booltrancomp is True.')
+
+            for k in tqdm(range(numbstar)):
+                
+                if dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k] == 0:
+                    continue
+
+                if booltrancomp:
+                    maxmcosicomptemp = dictpopl[strglimb][namepopllimbtotl]['rsmacomp'][0][k]
+                elif maxmcosicomp is not None:
+                    maxmcosicomptemp = maxmcosicomp
+                else:
+                    maxmcosicomptemp = 1.
+                
+                # cosine of orbital inclinations
+                dictpopl[strglimb][namepopllimbtotl]['cosicomp'][0][dictindx[strglimb][strgbody][k]] = maxmcosicomptemp * np.random.rand(numb)
+                
+        if strglimb == 'comp':
+
             # orbital inclinations of the companions
             dictpopl[strglimb][namepopllimbtotl]['inclcomp'] = [180. / np.pi * np.arccos(dictpopl[strglimb][namepopllimbtotl]['cosicomp'][0]), 'degree']
             
