@@ -1684,7 +1684,10 @@ def retr_logg(radi, mass):
     return logg
 
 
-def retr_noislsst(magtinpt):
+def retr_noisphot(magtinpt, strginst, typeoutp='intplite'):
+    '''
+    TESS photometric precision (over what time scale?)
+    ''' 
     
     if np.isscalar(magtinpt):
         #magtinpt = np.array(magtinpt)
@@ -1694,41 +1697,41 @@ def retr_noislsst(magtinpt):
     
     nois = np.zeros_like(magtinpt) + np.inf
     
-    indx = np.where((magtinpt < 20.) & (magtinpt > 15.))
-    nois[indx] = 6. # [ppt]
+    if strginst == 'LSST':
+        if strginst.endswith('band'):
+            strgband = strginst[-5]
+        else:
+            strgband = strginst[-1]
+        
+        indx = np.where((magtinpt < 20.) & (magtinpt > 15.))
+        nois[indx] = 6. # [ppt]
+        
+        indx = np.where((magtinpt >= 20.) & (magtinpt < 24.))
+        nois[indx] = 6. * 10**((magtinpt[indx] - 20.) / 3.) # [ppt]
     
-    indx = np.where((magtinpt >= 20.) & (magtinpt < 24.))
-    nois[indx] = 6. * 10**((magtinpt[indx] - 20.) / 3.) # [ppt]
-    
-    return nois
-
-
-def retr_noistess(magtinpt, typeoutp='intplite', typeinst='TESS'):
-    '''
-    TESS photometric precision (over what time scale?)
-    ''' 
-    
-    # interpolate literature values
-    if typeoutp == 'intplite':
-        nois = np.array([40., 40., 40., 90., 200., 700., 3e3, 2e4]) * 1e-3 # [ppt]
-        magt = np.array([ 2.,  4.,  6.,  8.,  10.,  12., 14., 16.])
-        objtspln = scipy.interpolate.interp1d(magt, nois, fill_value='extrapolate')
-        nois = objtspln(magtinpt)
-    elif typeoutp == 'calcspoc':
-        pass
+    elif strginst == 'TESS':
+        # interpolate literature values
+        if typeoutp == 'intplite':
+            nois = np.array([40., 40., 40., 90., 200., 700., 3e3, 2e4]) * 1e-3 # [ppt]
+            magt = np.array([ 2.,  4.,  6.,  8.,  10.,  12., 14., 16.])
+            objtspln = scipy.interpolate.interp1d(magt, nois, fill_value='extrapolate')
+            nois = objtspln(magtinpt)
+        elif typeoutp == 'calcspoc':
+            pass
+        else:
+            raise Exception('')
+    elif strginst == 'TESS-GEO-UV':
+        nois = 0.5 * 1e3 * 0.2 * 10**(-22. + magtinpt) # [ppt over one hour]
+    elif strginst == 'TESS-GEO-VIS':
+        nois = 0.5 * 1e3 * 0.2 * 10**(-25. + magtinpt) # [ppt over one hour]
+    elif strginst == 'ULTRASAT':
+        nois = 0.5 * 1e3 * 0.2 * 10**(-22.4 + magtinpt) # [ppt over one hour]
     else:
-        raise Exception('')
-
-    if typeinst == 'TESS':
-        pass
-    elif typeinst in ['TESS-GEO-UV', 'TESS-GEO-VIS']:
-        nois *= 0.2
-    else:
         print('')
         print('')
         print('')
-        print('typeinst')
-        print(typeinst)
+        print('strginst')
+        print(strginst)
         raise Exception('')
 
     return nois
