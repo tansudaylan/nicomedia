@@ -1951,7 +1951,7 @@ def retr_dictpoplstarcomp( \
     
     dictstarnumbsamp[namepoplstartotl] = numbstar
 
-    numbsyst = len(dictpopl['star'][namepoplstartotl]['radistar'])
+    numbsyst = len(dictpopl['star'][namepoplstartotl]['radistar'][0])
     indxsyst = np.arange(numbsyst)
 
     # total mass
@@ -2086,9 +2086,9 @@ def retr_dictpoplstarcomp( \
         dictindx[strglimb] = dict()
         dictindx[strglimb][strgbody] = [[] for k in indxsyst]
         cntr = 0
-        for k in range(len(dictpopl[strgbody][namepoplstartotl]['radistar'][0])):
+        for k in indxsyst:
             dictindx[strglimb][strgbody][k] = np.arange(cntr, cntr + dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]).astype(int)
-            cntr += dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k]
+            cntr += dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]
         dictnumbsamp[strglimb][namepopllimbtotl] = cntr
     
         # prepare to load star features into component features
@@ -2125,16 +2125,23 @@ def retr_dictpoplstarcomp( \
                 raise Exception('')
 
             cntr = 0
-            for k in range(len(dictindx[strglimb][strgbody][0])):
-                cntr += dictindx[strglimb][strgbody][0][k].size
+            for k in indxsyst:
+                cntr += len(dictindx[strglimb][strgbody][k])
             if cntr != dictnumbsamp[strglimb][namepopllimbtotl]:
-                raise Exception('')
+                print('')
+                print('')
+                print('')
+                print('cntr')
+                print(cntr)
+                print('dictnumbsamp[strglimb][namepopllimbtotl]')
+                print(dictnumbsamp[strglimb][namepopllimbtotl])
+                raise Exception('cntr != dictnumbsamp[strglimb][namepopllimbtotl]')
     
         print('Sampling features...')
     
         for k in tqdm(range(numbstar)):
             
-            if dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k] == 0:
+            if dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k] == 0:
                 continue
 
             # load star features into component features
@@ -2227,7 +2234,7 @@ def retr_dictpoplstarcomp( \
                     
                     dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]] = \
                                             retr_perikepl(dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0][dictindx[strglimb][strgbody][k]], \
-                                                                                                         dictpopl[strgbody][namepoplstartotl]['masssyst'][k], factnonk=factnonk)
+                                                                                                  dictpopl[strgbody][namepoplstartotl]['masssyst'][0][k], factnonk=factnonk)
                     
         
                 
@@ -2274,7 +2281,7 @@ def retr_dictpoplstarcomp( \
 
             for k in tqdm(range(numbstar)):
                 
-                if dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k] == 0:
+                if dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k] == 0:
                     continue
 
                 if booltrancomp:
