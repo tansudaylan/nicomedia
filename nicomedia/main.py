@@ -1829,8 +1829,11 @@ def retr_dictpoplstarcomp( \
                           # Boolean flag to include exomoons
                           boolinclmoon=False, \
                           
-                          # Boolean flag to make the generative model produce Suns
-                          booltoyysunn=False, \
+                          # type of stellar population
+                          ## 'sunl': 1 Solar mass with the Sun's density (i.e., 1 Solar radius)
+                          ## 'drawkrou': draw from Kroupa IMF with densities consistent with mass
+                          ## 'wdwf': 1 Solar mass and 0.01 Solar radius
+                          typestar='sunl', \
                           
                           # Boolean flag to diagnose
                           booldiag=True, \
@@ -1913,16 +1916,23 @@ def retr_dictpoplstarcomp( \
         
         dictpopl['star'][namepoplstartotl]['distsyst'] = [tdpy.icdf_powr(np.random.rand(numbsyst), 100., 7000., -2.), 'pc']
         
-        if booltoyysunn:
+        if typestar == 'sunl':
             dictpopl['star'][namepoplstartotl]['radistar'] = [np.ones(numbsyst), '$R_{\odot}$']
             dictpopl['star'][namepoplstartotl]['massstar'] = [np.ones(numbsyst), '$M_{\odot}$']
             dictpopl['star'][namepoplstartotl]['densstar'] = [1.4 * np.ones(numbsyst), 'g cm$^{-3}$']
-        else:
+        elif typestar == 'drawkrou':
             dictpopl['star'][namepoplstartotl]['massstar'] = [tdpy.icdf_powr(np.random.rand(numbsyst), 0.1, 10., 2.), '$M_{\odot}$']
             dictpopl['star'][namepoplstartotl]['densstar'] = [1.4 * (1. / dictpopl['star'][namepoplstartotl]['massstar'][0])**(0.7), 'g cm$^{-3}$']
             dictpopl['star'][namepoplstartotl]['radistar'] = [(1.4 * dictpopl['star'][namepoplstartotl]['massstar'][0] / \
                                                                                         dictpopl['star'][namepoplstartotl]['densstar'][0])**(1. / 3.), '$R_{\odot}$']
-        
+            raise Exception('To be implemented')
+        elif typestar == 'wdwf':
+            dictpopl['star'][namepoplstartotl]['radistar'] = [0.01 * np.ones(numbsyst), '$R_{\odot}$']
+            dictpopl['star'][namepoplstartotl]['massstar'] = [np.ones(numbsyst), '$M_{\odot}$']
+            dictpopl['star'][namepoplstartotl]['densstar'] = [1.4e6 * np.ones(numbsyst), 'g cm$^{-3}$']
+        else:
+            raise Exception('')
+
         dictpopl['star'][namepoplstartotl]['coeflmdklinr'] = [0.4 * np.ones(numbsyst), '']
         dictpopl['star'][namepoplstartotl]['coeflmdkquad'] = [0.25 * np.ones(numbsyst), '']
 
