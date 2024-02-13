@@ -1697,7 +1697,7 @@ def retr_noisphot(magtinpt, strginst, typeoutp='intplite'):
     
     nois = np.zeros_like(magtinpt) + np.inf
     
-    if strginst == 'LSST':
+    if strginst.startswith('LSST'):
         if strginst.endswith('band'):
             strgband = strginst[-5]
         else:
