@@ -912,6 +912,12 @@ def calc_tsmmesmm(dictpopl, strgelem='comp', boolsamp=False):
     
     for n in range(numbcomp):
         
+        print('strgelem')
+        print(strgelem)
+        print('dictpopl[tmpt%s % strgelem]')
+        print(dictpopl['tmpt%s' % strgelem])
+        print('')
+
         if not np.isfinite(dictpopl['tmpt%s' % strgelem][0][n]):
             continue
         
@@ -1942,7 +1948,7 @@ def retr_dictpoplstarcomp( \
         dictpopl['star'][namepoplstartotl]['lumistar'] = [dictpopl['star'][namepoplstartotl]['massstar'][0]**4, '$L_{\odot}$']
         
         dictpopl['star'][namepoplstartotl]['tmag'] = [1. * (-2.5) * np.log10(dictpopl['star'][namepoplstartotl]['lumistar'][0] / \
-                                                                                        dictpopl['star'][namepoplstartotl]['distsyst'][0]**2), '']
+                                                                                        dictpopl['star'][namepoplstartotl]['distsyst'][0]**2), 'mag']
         
         if typepoplsyst == 'lsstwfds':
             dictpopl['star'][namepoplstartotl]['rmag'] = -2.5 * np.log10(dictpopl['star'][namepoplstartotl]['lumistar'] / dictpopl['star'][namepoplstartotl]['distsyst']**2)
@@ -2099,6 +2105,8 @@ def retr_dictpoplstarcomp( \
         dictindx[strglimb] = dict()
         dictindx[strglimb][strgbody] = [[] for k in indxsyst]
         cntr = 0
+        print('indxsyst')
+        print(indxsyst)
         for k in indxsyst:
             dictindx[strglimb][strgbody][k] = np.arange(cntr, cntr + dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]).astype(int)
             cntr += dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]
