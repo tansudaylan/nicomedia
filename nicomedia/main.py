@@ -647,20 +647,22 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
     strgmasselem = 'mass' + strgelem
     strgstdvmass = 'stdv' + strgmasselem
     
+    strgperielem = 'peri' + strgelem
+    
     dicttoii = {}
-    dicttoii['TOIID'] = objtexof['TOI'].values
-    numbcomp = dicttoii['TOIID'].size
+    tdpy.setp_dict(dicttoii, 'TOIID', objtexof['TOI'].values)
+    numbcomp = dicttoii['TOIID'][0].size
     indxcomp = np.arange(numbcomp)
     toiitargexof = np.empty(numbcomp, dtype=object)
     for k in indxcomp:
-        toiitargexof[k] = int(dicttoii['TOIID'][k])
+        toiitargexof[k] = int(dicttoii['TOIID'][0][k])
         
     if toiitarg is None:
         indxcomp = np.arange(numbcomp)
     else:
         indxcomp = np.where(toiitargexof == toiitarg)[0]
     
-    dicttoii['TOIID'] = dicttoii['TOIID'][indxcomp]
+    dicttoii['TOIID'][0] = dicttoii['TOIID'][0][indxcomp]
     
     numbcomp = indxcomp.size
     
@@ -669,82 +671,77 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
             print('The host name, %s, was not found in the ExoFOP TOI Catalog.' % toiitarg)
         return None
     else:
-        dicttoii['namestar'] = np.empty(numbcomp, dtype=object)
-        dicttoii['nametoii'] = np.empty(numbcomp, dtype=object)
+        tdpy.setp_dict(dicttoii, 'namestar', np.empty(numbcomp, dtype=object))
+        tdpy.setp_dict(dicttoii, 'nametoii', np.empty(numbcomp, dtype=object))
         for kk, k in enumerate(indxcomp):
-            dicttoii['nametoii'][kk] = 'TOI-' + str(dicttoii['TOIID'][kk])
-            dicttoii['namestar'][kk] = 'TOI-' + str(dicttoii['TOIID'][kk])[:-3]
+            dicttoii['nametoii'][0][kk] = 'TOI-' + str(dicttoii['TOIID'][0][kk])
+            dicttoii['namestar'][0][kk] = 'TOI-' + str(dicttoii['TOIID'][0][kk])[:-3]
         
-        dicttoii['depttrancomp'] = objtexof['Depth (ppm)'].values[indxcomp] * 1e-3 # [ppt]
-        dicttoii['rratcomp'] = np.sqrt(dicttoii['depttrancomp'] * 1e-3)
-        dicttoii[strgradielem] = objtexof['Planet Radius (R_Earth)'][indxcomp].values
-        dicttoii['stdvradi' + strgelem] = objtexof['Planet Radius (R_Earth) err'][indxcomp].values
+        tdpy.setp_dict(dicttoii, 'depttrancomp', objtexof['Depth (ppm)'].values[indxcomp] * 1e-3, 'ppt')
+        tdpy.setp_dict(dicttoii, 'rratcomp', np.sqrt(dicttoii['depttrancomp'][0] * 1e-3))
+        tdpy.setp_dict(dicttoii, strgradielem, objtexof['Planet Radius (R_Earth)'][indxcomp].values, 'R$_{\oplus}$')
+        tdpy.setp_dict(dicttoii, 'stdvradi' + strgradielem, objtexof['Planet Radius (R_Earth) err'][indxcomp].values, 'R$_{\oplus}$')
         
         rascstarstrg = objtexof['RA'][indxcomp].values
         declstarstrg = objtexof['Dec'][indxcomp].values
-        dicttoii['rascstar'] = np.empty_like(dicttoii[strgradielem])
-        dicttoii['declstar'] = np.empty_like(dicttoii[strgradielem])
-        for k in range(dicttoii[strgradielem].size):
+        tdpy.setp_dict(dicttoii, 'rascstar', np.empty(numbcomp))
+        tdpy.setp_dict(dicttoii, 'declstar', np.empty(numbcomp))
+        for k in range(dicttoii[strgradielem][0].size):
             objt = astropy.coordinates.SkyCoord('%s %s' % (rascstarstrg[k], declstarstrg[k]), unit=(astropy.units.hourangle, astropy.units.deg))
-            dicttoii['rascstar'][k] = objt.ra.degree
-            dicttoii['declstar'][k] = objt.dec.degree
+            dicttoii['rascstar'][0][k] = objt.ra.degree
+            dicttoii['declstar'][0][k] = objt.dec.degree
 
         # a string holding the comments
-        dicttoii['strgcomm'] = np.empty(numbcomp, dtype=object)
-        dicttoii['strgcomm'][:] = objtexof['Comments'][indxcomp].values
-        
-        #objticrs = astropy.coordinates.SkyCoord(ra=dicttoii['rascstar']*astropy.units.degree, \
-        #                                       dec=dicttoii['declstar']*astropy.units.degree, frame='icrs')
-        
-        objticrs = astropy.coordinates.SkyCoord(ra=dicttoii['rascstar'], \
-                                               dec=dicttoii['declstar'], frame='icrs', unit='deg')
+        tdpy.setp_dict(dicttoii, 'strgcomm', objtexof['Comments'][indxcomp].values)
         
         # transit duration
-        dicttoii['duratrantotl'] = objtexof['Duration (hours)'].values[indxcomp] # [hours]
+        tdpy.setp_dict(dicttoii, 'duratrantotl', objtexof['Duration (hours)'].values[indxcomp], 'hours')
         
-        # galactic longitude
-        dicttoii['lgalstar'] = np.array([objticrs.galactic.l])[0, :]
+        # coordinates
+        objticrs = astropy.coordinates.SkyCoord(ra=dicttoii['rascstar'][0], dec=dicttoii['declstar'][0], frame='icrs', unit='deg')
         
-        # galactic latitude
-        dicttoii['bgalstar'] = np.array([objticrs.galactic.b])[0, :]
+        ## galactic longitude
+        tdpy.setp_dict(dicttoii, 'lgalstar', np.array([objticrs.galactic.l])[0, :], 'degrees')
         
-        # ecliptic longitude
-        dicttoii['loecstar'] = np.array([objticrs.barycentricmeanecliptic.lon.degree])[0, :]
+        ## galactic latitude
+        tdpy.setp_dict(dicttoii, 'bgalstar', np.array([objticrs.galactic.b])[0, :], 'degrees')
         
-        # ecliptic latitude
-        dicttoii['laecstar'] = np.array([objticrs.barycentricmeanecliptic.lat.degree])[0, :]
+        ## ecliptic longitude
+        tdpy.setp_dict(dicttoii, 'loecstar', np.array([objticrs.barycentricmeanecliptic.lon.degree])[0, :], 'degrees')
+        
+        ## ecliptic latitude
+        tdpy.setp_dict(dicttoii, 'laecstar', np.array([objticrs.barycentricmeanecliptic.lat.degree])[0, :], 'degrees')
 
         # SNR
-        dicttoii['s2nr'] = objtexof['Planet SNR'][indxcomp].values
+        tdpy.setp_dict(dicttoii, 's2nr', objtexof['Planet SNR'][indxcomp].values)
         
-        dicttoii['numbobsvtime'] = objtexof['Time Series Observations'][indxcomp].values
-        dicttoii['numbobsvspec'] = objtexof['Spectroscopy Observations'][indxcomp].values
-        dicttoii['numbobsvimag'] = objtexof['Imaging Observations'][indxcomp].values
+        # amount of follow-up data
+        tdpy.setp_dict(dicttoii, 'numbobsvtime', objtexof['Time Series Observations'][indxcomp].values)
+        tdpy.setp_dict(dicttoii, 'numbobsvspec', objtexof['Spectroscopy Observations'][indxcomp].values)
+        tdpy.setp_dict(dicttoii, 'numbobsvimag', objtexof['Imaging Observations'][indxcomp].values)
+        
         # alert year
-        dicttoii['yearaler'] = objtexof['Date TOI Alerted (UTC)'][indxcomp].values
-        for k in range(len(dicttoii['yearaler'])):
-            dicttoii['yearaler'][k] = astropy.time.Time(dicttoii['yearaler'][k] + ' 00:00:00.000').decimalyear
-        dicttoii['yearaler'] = dicttoii['yearaler'].astype(float)
+        tdpy.setp_dict(dicttoii, 'yearaler', objtexof['Date TOI Alerted (UTC)'][indxcomp].values)
+        for k in range(len(dicttoii['yearaler'][0])):
+            dicttoii['yearaler'][0][k] = astropy.time.Time(dicttoii['yearaler'][0][k] + ' 00:00:00.000').decimalyear
+        dicttoii['yearaler'][0] = dicttoii['yearaler'][0].astype(float)
 
-        dicttoii['tsmmacwg'] = objtexof['TSM'][indxcomp].values
-        dicttoii['esmmacwg'] = objtexof['ESM'][indxcomp].values
+        tdpy.setp_dict(dicttoii, 'tsmmacwg', objtexof['TSM'][indxcomp].values)
+        tdpy.setp_dict(dicttoii, 'esmmacwg', objtexof['ESM'][indxcomp].values)
     
-        dicttoii['facidisc'] = np.empty(numbcomp, dtype=object)
-        dicttoii['facidisc'][:] = 'Transiting Exoplanet Survey Satellite (TESS)'
+        tdpy.setp_dict(dicttoii, 'facidisc', np.empty(numbcomp, dtype=object))
+        dicttoii['facidisc'][0][:] = 'Transiting Exoplanet Survey Satellite (TESS)'
         
-        dicttoii['peri'+strgelem] = objtexof['Period (days)'][indxcomp].values
-        dicttoii['peri'+strgelem][np.where(dicttoii['peri'+strgelem] == 0)] = np.nan
+        tdpy.setp_dict(dicttoii, strgperielem, objtexof['Period (days)'][indxcomp].values)
+        dicttoii[strgperielem][0][np.where(dicttoii[strgperielem][0] == 0)] = np.nan
 
-        dicttoii['epocmtra'+strgelem] = objtexof['Epoch (BJD)'][indxcomp].values
+        tdpy.setp_dict(dicttoii, 'epocmtra' + strgelem, objtexof['Epoch (BJD)'][indxcomp].values)
 
-        dicttoii['tmagsyst'] = objtexof['TESS Mag'][indxcomp].values
-        dicttoii['stdvtmagsyst'] = objtexof['TESS Mag err'][indxcomp].values
+        tdpy.setp_dict(dicttoii, 'tmagsyst', objtexof['TESS Mag'][indxcomp].values)
+        tdpy.setp_dict(dicttoii, 'stdvtmagsyst', objtexof['TESS Mag err'][indxcomp].values)
 
         # transit duty cycle
-        dicttoii['dcyc'] = dicttoii['duratrantotl'] / dicttoii['peri'+strgelem] / 24.
-        
-        boolfrst = np.zeros(numbcomp)
-        dicttoii['numb%sstar' % strgelem] = np.zeros(numbcomp)
+        dicttoii['dcyc'] = dicttoii['duratrantotl'][0] / dicttoii[strgperielem][0] / 24.
         
         liststrgfeatstartici = ['massstar', 'vmagsyst', 'jmagsyst', 'hmagsyst', 'kmagsyst', 'distsyst', 'metastar', 'radistar', 'tmptstar', 'loggstar']
         liststrgfeatstarticiinhe = ['mass', 'Vmag', 'Jmag', 'Hmag', 'Kmag', 'd', 'MH', 'rad', 'Teff', 'logg']
@@ -753,70 +750,70 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
         indxstrgfeatstartici = np.arange(numbstrgfeatstartici)
 
         for strgfeat in liststrgfeatstartici:
-            dicttoii[strgfeat] = np.zeros(numbcomp)
-            dicttoii['stdv' + strgfeat] = np.zeros(numbcomp)
+            tdpy.setp_dict(dicttoii, strgfeat, np.zeros(numbcomp))
+            tdpy.setp_dict(dicttoii, 'stdv' + strgfeat, np.zeros(numbcomp))
         
         ## crossmatch with TIC
         print('Retrieving TIC columns of TOI hosts...')
-        dicttoii['TICID'] = objtexof['TIC ID'][indxcomp].values
-        listticiuniq = np.unique(dicttoii['TICID'].astype(str))
+        tdpy.setp_dict(dicttoii, 'TICID', objtexof['TIC ID'][indxcomp].values)
+        listticiuniq = np.unique(dicttoii['TICID'][0].astype(str))
         request = {'service':'Mast.Catalogs.Filtered.Tic', 'format':'json', 'params':{'columns':"*", \
                                                               'filters':[{'paramName':'ID', 'values':list(listticiuniq)}]}}
         headers, outString = quer_mast(request)
         listdictquer = json.loads(outString)['data']
         for k in range(len(listdictquer)):
-            indxtemp = np.where(dicttoii['TICID'] == listdictquer[k]['ID'])[0]
+            indxtemp = np.where(dicttoii['TICID'][0] == listdictquer[k]['ID'])[0]
             if indxtemp.size == 0:
                 raise Exception('')
             for n in indxstrgfeatstartici:
-                dicttoii[liststrgfeatstartici[n]][indxtemp] = listdictquer[k][liststrgfeatstarticiinhe[n]]
-                dicttoii['stdv' + liststrgfeatstartici[n]][indxtemp] = listdictquer[k]['e_' + liststrgfeatstarticiinhe[n]]
+                dicttoii[liststrgfeatstartici[n]][0][indxtemp] = listdictquer[k][liststrgfeatstarticiinhe[n]]
+                dicttoii['stdv' + liststrgfeatstartici[n]][0][indxtemp] = listdictquer[k]['e_' + liststrgfeatstarticiinhe[n]]
         
-        dicttoii['typedisptess'] = objtexof['TESS Disposition'][indxcomp].values
-        dicttoii['boolfpos'] = objtexof['TFOPWG Disposition'][indxcomp].values == 'FP'
+        tdpy.setp_dict(dicttoii, 'typedisptess', objtexof['TESS Disposition'][indxcomp].values)
+        tdpy.setp_dict(dicttoii, 'boolfpos', objtexof['TFOPWG Disposition'][indxcomp].values == 'FP')
         
         # augment
-        dicttoii['numb%sstar' % strgelem] = np.empty(numbcomp)
+        tdpy.setp_dict(dicttoii, 'numb%sstar' % strgelem, np.zeros(numbcomp))
         boolfrst = np.zeros(numbcomp, dtype=bool)
         for kk, k in enumerate(indxcomp):
-            indxcompthis = np.where(dicttoii['namestar'][kk] == dicttoii['namestar'])[0]
+            indxcompthis = np.where(dicttoii['namestar'][0][kk] == dicttoii['namestar'][0])[0]
             if kk == indxcompthis[0]:
                 boolfrst[kk] = True
-            dicttoii['numb%sstar' % strgelem][kk] = indxcompthis.size
+            dicttoii['numb%sstar' % strgelem][0][kk] = indxcompthis.size
         
-        dicttoii['numb%stranstar' % strgelem] = dicttoii['numb%sstar' % strgelem]
-        dicttoii['lumistar'] = dicttoii['radistar']**2 * (dicttoii['tmptstar'] / 5778.)**4
-        dicttoii['stdvlumistar'] = dicttoii['lumistar'] * np.sqrt((2 * dicttoii['stdvradistar'] / dicttoii['radistar'])**2 + \
-                                                                        (4 * dicttoii['stdvtmptstar'] / dicttoii['tmptstar'])**2)
+        tdpy.setp_dict(dicttoii, 'numb%stranstar' % strgelem, dicttoii['numb%sstar' % strgelem])
+        tdpy.setp_dict(dicttoii, 'lumistar', dicttoii['radistar'][0]**2 * (dicttoii['tmptstar'][0] / 5778.)**4)
+        tdpy.setp_dict(dicttoii, 'stdvlumistar', dicttoii['lumistar'][0] * np.sqrt((2 * dicttoii['stdvradistar'][0] / dicttoii['radistar'][0])**2 + \
+                                                                                            (4 * dicttoii['stdvtmptstar'][0] / dicttoii['tmptstar'][0])**2))
         
         # predicted mass from radii
         path = pathephe + 'data/exofop_toi_mass_saved.csv'
         if not os.path.exists(path):
             dicttemp = dict()
-            dicttemp[strgmasselem] = np.ones_like(dicttoii[strgradielem]) + np.nan
-            dicttemp['stdvmass' + strgelem] = np.ones_like(dicttoii[strgradielem]) + np.nan
+            dicttemp[strgmasselem] = np.ones_like(dicttoii[strgradielem][0]) + np.nan
+            dicttemp[strgstdvmass] = np.ones_like(dicttoii[strgradielem][0]) + np.nan
             
             numbsamppopl = 10
-            indx = np.where(np.isfinite(dicttoii[strgradielem]))[0]
+            indx = np.where(np.isfinite(dicttoii[strgradielem][0]))[0]
             for n in tqdm(range(indx.size)):
                 k = indx[n]
-                meanvarb = dicttoii[strgradielem][k]
-                stdvvarb = dicttoii['stdvradi' + strgelem][k]
+                meanvarb = dicttoii[strgradielem][0][k]
+                stdvvarb = dicttoii['stdvradi' + strgelem][0][k]
                 
                 # if radius uncertainty is not available, assume that it is small, so the mass uncertainty will be dominated by population uncertainty
                 if not np.isfinite(stdvvarb):
-                    stdvvarb = 1e-3 * dicttoii[strgradielem][k]
+                    stdvvarb = 1e-3 * dicttoii[strgradielem][0][k]
                 else:
-                    stdvvarb = dicttoii['stdvradi' + strgelem][k]
+                    stdvvarb = dicttoii['stdvradi' + strgelem][0][k]
                 
                 # sample from a truncated Gaussian
-                listradicomp = tdpy.samp_gaustrun(1000, dicttoii[strgradielem][k], stdvvarb, 0., np.inf)
+                listradicomp = tdpy.samp_gaustrun(1000, dicttoii[strgradielem][0][k], stdvvarb, 0., np.inf)
                 
                 # estimate the mass from samples
                 listmassplan = retr_massfromradi(listradicomp)
                 
                 dicttemp[strgmasselem][k] = np.mean(listmassplan)
-                dicttemp['stdvmass' + strgelem][k] = np.std(listmassplan)
+                dicttemp[strgstdvmass][k] = np.std(listmassplan)
                 
             if typeverb > 0:
                 print('Writing to %s...' % path)
@@ -831,19 +828,17 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
                 if toiitarg is not None:
                     dicttemp[name] = dicttemp[name][indxcomp]
         
-        print('dicttemp')
-        print(dicttemp.keys())
-        dicttoii[strgmasselem] = dicttemp['mass' + strgelem]
+        tdpy.setp_dict(dicttoii, strgmasselem, dicttemp[strgmasselem])
+        tdpy.setp_dict(dicttoii, strgstdvmass, dicttemp[strgstdvmass])
         
-        perielem = dicttoii['peri'+strgelem]
-        masselem = dicttoii['mass'+strgelem]
+        perielem = dicttoii[strgperielem][0]
+        masselem = dicttoii[stdvmasselem][0]
 
-        dicttoii['rvelsemapred'] = retr_rvelsema(perielem, dicttoii['massstar'], masselem, 90., 0.)
-        
-        dicttoii['stdvmass' + strgelem] = dicttemp['stdvmass' + strgelem]
+        rvelsemapred = retr_rvelsema(perielem, dicttoii['massstar'][0], masselem, 90., 0.)
+        tdpy.setp_dict(dicttoii, 'rvelsemapred', rvelsemapred, 'degrees')
         
         dicttoii['masstotl'] = dicttoii['massstar'] + dicttoii[strgmasselem] / dictfact['msme']
-        dicttoii['smax'+strgelem] = retr_smaxkepl(dicttoii['peri'+strgelem], dicttoii['masstotl'])
+        dicttoii['smax'+strgelem] = retr_smaxkepl(dicttoii[strgperielem], dicttoii['masstotl'])
         
         dicttoii['rsma'+strgelem] = (dicttoii[strgradielem] / dictfact['rsre'] + dicttoii['radistar']) / (dictfact['aurs'] * dicttoii['smax'+strgelem])
         
@@ -1431,22 +1426,23 @@ def retr_dictexar( \
             dictexar['numb%stranstar' % strgelem][0][k] = indxexarstartran.size
             #dictexar['booltrantotl'][0][k] = dictexar['booltran'][0][indxexarstar].all()
         
-        objticrs = astropy.coordinates.SkyCoord(ra=dictexar['rascstar'][0], \
-                                               dec=dictexar['declstar'][0], frame='icrs', unit='deg')
-        
         # transit duty cycle
         dictexar['dcyc'][0] = dictexar['duratrantotl'][0] / dictexar['pericomp'][0] / 24.
         
-        # galactic longitude
+        # coordinates
+        objticrs = astropy.coordinates.SkyCoord(ra=dictexar['rascstar'][0], \
+                                               dec=dictexar['declstar'][0], frame='icrs', unit='deg')
+        
+        ## galactic longitude
         dictexar['lgalstar'][0] = np.array([objticrs.galactic.l])[0, :]
         
-        # galactic latitude
+        ## galactic latitude
         dictexar['bgalstar'][0] = np.array([objticrs.galactic.b])[0, :]
         
-        # ecliptic longitude
+        ## ecliptic longitude
         dictexar['loecstar'][0] = np.array([objticrs.barycentricmeanecliptic.lon.degree])[0, :]
         
-        # ecliptic latitude
+        ## ecliptic latitude
         dictexar['laecstar'][0] = np.array([objticrs.barycentricmeanecliptic.lat.degree])[0, :]
 
         # radius ratio
