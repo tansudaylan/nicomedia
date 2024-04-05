@@ -399,6 +399,97 @@ def retr_listcolrcomp(numbcomp):
     return listcolrcomp
 
 
+def retr_dictspec(radistar, tmptstar, diststar, liststrgband):
+            
+    print('Calculating the magnitudes of the target based on radii, temperatures and distance...')
+    
+    dictspec = dict()
+
+    # define spectral grid (this may need to be taken outside the if statements for other purposes)
+    minmwlen = 0.1
+    maxmwlen = 10.
+    numbwlen = 1000
+    dictspec['binsgrid'], dictspec['midpgrid'], _, _, _ = retr_axis(minmwlen, maxmwlen, numbpntsgrid=numbwlen, scalpara='logt')
+    
+    dictspec['specsyst '] = tdpy.retr_specbbod(tmptstar, dictspec['midpgrid']) * 4. * np.pi * radistar
+    
+    gdat.dictspecsyst = dict()
+    gdat.dictfluxsyst = dict()
+    gdat.dictfunctran = dict()
+    
+    gdat.numbband = len(gdat.liststrgband)
+    gdat.indxband = np.arange(gdat.numbband)
+    
+    path = gdat.pathvisutarg + 'spec_%s' % gdat.strgtarg
+    for pl in gdat.indxband:
+        path += '_' + gdat.liststrgband[pl]
+    path += '.%s' % gdat.typefileplot
+    if not os.path.exists(path):
+        figr, axis = plt.subplots(figsize=gdat.figrsizeydob)
+        axistwin = axis.twinx()
+        axis.plot(gdat.midpwlen, gdat.specsyst, color=colrdraw, ls='-', ms=1, rasterized=True)
+    
+    for pl in gdat.indxband:
+        
+        gdat.dictfunctran[gdat.liststrgband[pl]] = np.zeros_like(gdat.midpwlen)
+        
+        if gdat.liststrgband[pl] == 'ULTRASAT':
+            indxwlen = np.where((gdat.midpwlen < 0.29) & (gdat.midpwlen > 0.23))[0]
+            gdat.dictfunctran[gdat.liststrgband[pl]][indxwlen] = 1.
+            pntszero = 20.
+        
+        elif gdat.liststrgband[pl] == 'TESS-GEO-UV':
+            indxwlen = np.where((gdat.midpwlen < 0.29) & (gdat.midpwlen > 0.23))[0]
+            gdat.dictfunctran[gdat.liststrgband[pl]][indxwlen] = 1.
+            pntszero = 20.
+        
+        elif gdat.liststrgband[pl] == 'TESS-GEO-VIS':
+            indxwlen = np.where((gdat.midpwlen < 0.7) & (gdat.midpwlen > 0.4))[0]
+            gdat.dictfunctran[gdat.liststrgband[pl]][indxwlen] = 1.
+            pntszero = 20.
+        
+        elif gdat.liststrgband[pl] == 'TESS':
+            indxwlen = np.where((gdat.midpwlen < 1.) & (gdat.midpwlen > 0.6))[0]
+            gdat.dictfunctran[gdat.liststrgband[pl]][indxwlen] = 1.
+            pntszero = 20.
+        
+        elif gdat.liststrgband[pl].startswith('LSST'):
+            strgband = gdat.liststrgband[pl][-5]
+            gdat.dictfunctran[gdat.liststrgband[pl]][:] = 1.
+            pntszero = 20.
+        
+        elif gdat.liststrgband[pl] == 'Bolometric':
+            gdat.dictfunctran[gdat.liststrgband[pl]][:] = 1.
+            pntszero = 20.
+        
+        else:
+            print('')
+            print('')
+            print('')
+            print('gdat.liststrgband[pl]')
+            print(gdat.liststrgband[pl])
+            raise Exception('Undefined gdat.liststrgband[pl]')
+        
+        gdat.dictspecsyst[gdat.liststrgband[pl]] = np.trapz(gdat.specsyst * gdat.dictfunctran[gdat.liststrgband[pl]], x=gdat.midpwlen)
+        gdat.dictfluxsyst[gdat.liststrgband[pl]] = gdat.dictspecsyst[gdat.liststrgband[pl]] / 4. / np.pi / gdat.true.distsyst**2
+        gdat.dictmagtsyst[gdat.liststrgband[pl]] = pntszero - 2.5 * np.log10(gdat.dictfluxsyst[gdat.liststrgband[pl]])
+    
+        if not os.path.exists(path) and gdat.liststrgband[pl] != 'Bolometric':
+            axistwin.plot(gdat.midpwlen, gdat.dictfunctran[gdat.liststrgband[pl]], ls='-', ms=1, rasterized=True, label=gdat.liststrgband[pl])
+    
+    if not os.path.exists(path):
+        axis.set_xscale('log')
+        axis.set_xlabel('Wavelength [$\mu$m]')
+        axis.set_ylabel('Spectrum')
+        axistwin.legend()
+        axistwin.set_ylabel('Transfer function')
+        plt.subplots_adjust(hspace=0.)
+        if gdat.typeverb > 0:
+            print('Writing to %s...' % path)
+        plt.savefig(path)
+        plt.close()
+
+
 def plot_orbt( \
               # size of the figure
               sizefigr=(8, 8), \
@@ -832,30 +923,40 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
         tdpy.setp_dict(dicttoii, strgstdvmass, dicttemp[strgstdvmass])
         
         perielem = dicttoii[strgperielem][0]
-        masselem = dicttoii[stdvmasselem][0]
+        masselem = dicttoii[strgmasselem][0]
 
         rvelsemapred = retr_rvelsema(perielem, dicttoii['massstar'][0], masselem, 90., 0.)
         tdpy.setp_dict(dicttoii, 'rvelsemapred', rvelsemapred, 'degrees')
         
-        dicttoii['masstotl'] = dicttoii['massstar'] + dicttoii[strgmasselem] / dictfact['msme']
-        dicttoii['smax'+strgelem] = retr_smaxkepl(dicttoii[strgperielem], dicttoii['masstotl'])
+        masstotl = dicttoii['massstar'][0] + dicttoii[strgmasselem][0] / dictfact['msme']
+        tdpy.setp_dict(dicttoii, 'masstotl', masstotl)
         
-        dicttoii['rsma'+strgelem] = (dicttoii[strgradielem] / dictfact['rsre'] + dicttoii['radistar']) / (dictfact['aurs'] * dicttoii['smax'+strgelem])
+        tdpy.setp_dict(dicttoii, 'smax' + strgelem, retr_smaxkepl(dicttoii[strgperielem][0], dicttoii['masstotl'][0]))
         
-        dicttoii['irra'] = dicttoii['lumistar'] / dicttoii['smax'+strgelem]**2
+        rsmaelem = (dicttoii[strgradielem][0] / dictfact['rsre'] + dicttoii['radistar'][0]) / (dictfact['aurs'] * dicttoii['smax'+strgelem][0])
+        tdpy.setp_dict(dicttoii, 'rsma' + strgelem, rsmaelem)
         
-        dicttoii['tmpt%s' % strgelem] = dicttoii['tmptstar'] * np.sqrt(dicttoii['radistar'] / dicttoii['smax'+strgelem] / 2. / dictfact['aurs'])
+        tdpy.setp_dict(dicttoii, 'irra', dicttoii['lumistar'][0] / dicttoii['smax'+strgelem][0]**2)
+        
+        
         # temp check if factor of 2 is right
-        dicttoii['stdvtmpt%s' % strgelem] = np.sqrt((dicttoii['stdvtmptstar'] / dicttoii['tmptstar'])**2 + \
-                                                        0.5 * (dicttoii['stdvradistar'] / dicttoii['radistar'])**2) / np.sqrt(2.)
+        tmptcomp = dicttoii['tmptstar'][0] * np.sqrt(dicttoii['radistar'][0] / dicttoii['smax'+strgelem][0] / 2. / dictfact['aurs'])
+        tdpy.setp_dict(dicttoii, 'tmpt' + strgelem, tmptcomp)
         
-        dicttoii['dens%s' % strgelem] = 5.51 * dicttoii[strgmasselem] / dicttoii[strgradielem]**3 # [g/cm^3]
-        dicttoii['booltran'] = np.ones_like(dicttoii['TOIID'], dtype=bool)
-    
-        dicttoii['vesc'] = retr_vesc(dicttoii[strgmasselem], dicttoii[strgradielem])
+        # temp check if factor of 2 is right
+        stdvtmptcomp = np.sqrt((dicttoii['stdvtmptstar'][0] / dicttoii['tmptstar'][0])**2 + \
+                                                        0.5 * (dicttoii['stdvradistar'][0] / dicttoii['radistar'][0])**2) / np.sqrt(2.)
+        tdpy.setp_dict(dicttoii, 'stdvtmpt' + strgelem, stdvtmptcomp)
+        
+        tdpy.setp_dict(dicttoii, 'dens' + strgelem, 5.51 * dicttoii[strgmasselem][0] / dicttoii[strgradielem][0]**3, 'g/cm^3')
+        
+        tdpy.setp_dict(dicttoii, 'booltran', np.ones(numbcomp, dtype=bool))
+        
+        tdpy.setp_dict(dicttoii, 'vesc', retr_vesc(dicttoii[strgmasselem][0], dicttoii[strgradielem][0]))
+        
         print('temp: vsiistar and projoblq are NaNs')
-        dicttoii['vsiistar'] = np.ones(numbcomp) + np.nan
-        dicttoii['projoblq'] = np.ones(numbcomp) + np.nan
+        tdpy.setp_dict(dicttoii, 'vsiistar', np.full(numbcomp, np.nan))
+        tdpy.setp_dict(dicttoii, 'projoblq', np.full(numbcomp, np.nan))
         
         # replace confirmed planet features
         if boolreplexar:
@@ -863,30 +964,30 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
             listdisptess = objtexof['TESS Disposition'][indxcomp].values.astype(str)
             listdisptfop = objtexof['TFOPWG Disposition'][indxcomp].values.astype(str)
             indxexofcpla = np.where((listdisptfop == 'CP') & (listdisptess == 'PC'))[0]
-            listticicpla = dicttoii['TICID'][indxexofcpla]
+            listticicpla = dicttoii['TICID'][0][indxexofcpla]
             numbticicpla = len(listticicpla)
             indxticicpla = np.arange(numbticicpla)
             for k in indxticicpla:
                 indxexartici = np.where((dictexar['TICID'] == int(listticicpla[k])) & \
                                                     (dictexar['facidisc'] == 'Transiting Exoplanet Survey Satellite (TESS)'))[0]
-                indxexoftici = np.where(dicttoii['TICID'] == int(listticicpla[k]))[0]
+                indxexoftici = np.where(dicttoii['TICID'][0] == int(listticicpla[k]))[0]
                 for strg in dictexar.keys():
                     if indxexartici.size > 0:
-                        dicttoii[strg] = np.delete(dicttoii[strg], indxexoftici)
-                    dicttoii[strg] = np.concatenate((dicttoii[strg], dictexar[strg][indxexartici]))
+                        dicttoii[strg][0] = np.delete(dicttoii[strg][0], indxexoftici)
+                    dicttoii[strg][0] = np.concatenate((dicttoii[strg][0], dictexar[strg][indxexartici]))
 
         # calculate TSM and ESM
         calc_tsmmesmm(dicttoii, strgelem=strgelem)
     
         # turn zero TSM ACWG or ESM ACWG into NaN
-        indx = np.where(dicttoii['tsmmacwg'] == 0)[0]
-        dicttoii['tsmmacwg'][indx] = np.nan
+        indx = np.where(dicttoii['tsmmacwg'][0] == 0)[0]
+        dicttoii['tsmmacwg'][0][indx] = np.nan
         
-        indx = np.where(dicttoii['esmmacwg'] == 0)[0]
-        dicttoii['esmmacwg'][indx] = np.nan
+        indx = np.where(dicttoii['esmmacwg'][0] == 0)[0]
+        dicttoii['esmmacwg'][0][indx] = np.nan
         
         # surface gravity of the companion
-        dicttoii['logg' + strgelem] = dicttoii[strgmasselem] / dicttoii[strgradielem]**2
+        tdpy.setp_dict(dicttoii, 'logg' + strgelem, dicttoii[strgmasselem][0] / dicttoii[strgradielem][0]**2)
 
     return dicttoii
 
@@ -907,12 +1008,6 @@ def calc_tsmmesmm(dictpopl, strgelem='comp', boolsamp=False):
     
     for n in range(numbcomp):
         
-        print('strgelem')
-        print(strgelem)
-        print('dictpopl[tmpt%s % strgelem]')
-        print(dictpopl['tmpt%s' % strgelem])
-        print('')
-
         if not np.isfinite(dictpopl['tmpt%s' % strgelem][0][n]):
             continue
         
@@ -977,10 +1072,10 @@ def calc_tsmmesmm(dictpopl, strgelem='comp', boolsamp=False):
         #    print('listesmm[:, n]')
         #    summgene(listesmm[:, n])
         #    raise Exception('')
-    dictpopl['tsmm'][0] = np.nanmedian(listtsmm, 0)
-    dictpopl['stdvtsmm'][0] = np.nanstd(listtsmm, 0)
-    dictpopl['esmm'][0] = np.nanmedian(listesmm, 0)
-    dictpopl['stdvesmm'][0] = np.nanstd(listesmm, 0)
+    tdpy.setp_dict(dictpopl, 'tsmm', np.nanmedian(listtsmm, 0))
+    tdpy.setp_dict(dictpopl, 'stdvtsmm', np.nanstd(listtsmm, 0))
+    tdpy.setp_dict(dictpopl, 'esmm', np.nanmedian(listesmm, 0))
+    tdpy.setp_dict(dictpopl, 'stdvesmm', np.nanstd(listesmm, 0))
     
     #print('listesmm')
     #summgene(listesmm)
