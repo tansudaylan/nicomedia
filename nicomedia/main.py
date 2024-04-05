@@ -94,7 +94,10 @@ def xmat_tici(listtici):
     request = {'service':'Mast.Catalogs.Filtered.Tic', 'format':'json', 'params':{'columns':'rad, mass', \
                                                                         'filters':[{'paramName':'ID', 'values':listtici}]}}
     headers, outString = quer_mast(request)
-    dictquer = json.loads(outString)['data']
+    dictquertemp = json.loads(outString)['data']
+    dictquer = dict()
+    dictquer['rad'] = [dictquertemp['rad'], 'R_{\oplus}']
+    dictquer['mass'] = [dictquertemp['mass'], 'M_{\oplus}']
     
     return dictquer
 
@@ -328,7 +331,16 @@ def retr_dictpopltic8( \
             print('%d targets...' % numbtarg)
             print('Writing to %s...' % path)
         #columns = ['TICID', 'radi', 'mass']
-        pd.DataFrame.from_dict(dictquer).to_csv(path, index=False)#, columns=columns)
+        dictquertemp = dict()
+        listnamefeat = list(dictquertemp.keys())
+        listhead = []
+        for namefeat in listnamefeat:
+            strghead = namefeat
+            if dictquer[namefeat][1] != '':
+                strghead += '[%s]' % dictquer[namefeat][1]
+            listhead.append(strghead)
+            dictquertemp[namefeat] = dictquer[namefeat][0]
+        pd.DataFrame.from_dict(dictquertemp).to_csv(path, header=listhead, index=False)#, columns=columns)
     else:
         if typeverb > 0:
             print('Reading from %s...' % path)
@@ -345,15 +357,16 @@ def retr_dictpopltic8( \
         
     # check if dictquer is properly defined, whose leaves should be a list of two items (of values and labels, respectively)
     if booldiag:
-        for name in dictquer:
-            for nameseco in dictquer[name]:
-                if len(dictquer[name][nameseco]) != 2 or len(dictquer[name][nameseco][1]) > 0 and not isinstance(dictquer[name][nameseco][1][1], str):
-                    print('dictquer[name][nameseco]')
-                    print(dictquer[name][nameseco])
-                    print('')
-                    print('')
-                    print('')
-                    raise Exception('dictquer is not properly defined.')
+        for namefeat in dictquer:
+            if len(dictquer[namefeat]) != 2 or len(dictquer[namefeat][1]) > 0 and not isinstance(dictquer[namefeat][1][1], str):
+                print('namefeat')
+                print(namefeat)
+                print('dictquer[namefeat]')
+                print(dictquer[namefeat])
+                print('')
+                print('')
+                print('')
+                raise Exception('dictquer is not properly defined.')
 
     return dictquer
 
