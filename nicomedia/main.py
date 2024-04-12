@@ -784,7 +784,7 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
         tdpy.setp_dict(dicttoii, 'depttrancomp', objtexof['Depth (ppm)'].values[indxcomp] * 1e-3, 'ppt')
         tdpy.setp_dict(dicttoii, 'rratcomp', np.sqrt(dicttoii['depttrancomp'][0] * 1e-3))
         tdpy.setp_dict(dicttoii, strgradielem, objtexof['Planet Radius (R_Earth)'][indxcomp].values, 'R$_{\oplus}$')
-        tdpy.setp_dict(dicttoii, 'stdvradi' + strgradielem, objtexof['Planet Radius (R_Earth) err'][indxcomp].values, 'R$_{\oplus}$')
+        tdpy.setp_dict(dicttoii, strgstdvradi, objtexof['Planet Radius (R_Earth) err'][indxcomp].values, 'R$_{\oplus}$')
         
         rascstarstrg = objtexof['RA'][indxcomp].values
         declstarstrg = objtexof['Dec'][indxcomp].values
@@ -845,7 +845,7 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
         tdpy.setp_dict(dicttoii, 'stdvtmagsyst', objtexof['TESS Mag err'][indxcomp].values)
 
         # transit duty cycle
-        dicttoii['dcyc'] = dicttoii['duratrantotl'][0] / dicttoii[strgperielem][0] / 24.
+        tdpy.setp_dict(dicttoii, 'dcyc', dicttoii['duratrantotl'][0] / dicttoii[strgperielem][0] / 24.)
         
         liststrgfeatstartici = ['massstar', 'vmagsyst', 'jmagsyst', 'hmagsyst', 'kmagsyst', 'distsyst', 'metastar', 'radistar', 'tmptstar', 'loggstar']
         liststrgfeatstarticiinhe = ['mass', 'Vmag', 'Jmag', 'Hmag', 'Kmag', 'd', 'MH', 'rad', 'Teff', 'logg']
@@ -885,7 +885,7 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
                 boolfrst[kk] = True
             dicttoii['numb%sstar' % strgelem][0][kk] = indxcompthis.size
         
-        tdpy.setp_dict(dicttoii, 'numb%stranstar' % strgelem, dicttoii['numb%sstar' % strgelem])
+        tdpy.setp_dict(dicttoii, 'numb%stranstar' % strgelem, dicttoii['numb%sstar' % strgelem][0])
         tdpy.setp_dict(dicttoii, 'lumistar', dicttoii['radistar'][0]**2 * (dicttoii['tmptstar'][0] / 5778.)**4)
         tdpy.setp_dict(dicttoii, 'stdvlumistar', dicttoii['lumistar'][0] * np.sqrt((2 * dicttoii['stdvradistar'][0] / dicttoii['radistar'][0])**2 + \
                                                                                             (4 * dicttoii['stdvtmptstar'][0] / dicttoii['tmptstar'][0])**2))
@@ -989,6 +989,11 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
                         dicttoii[strg][0] = np.delete(dicttoii[strg][0], indxexoftici)
                     dicttoii[strg][0] = np.concatenate((dicttoii[strg][0], dictexar[strg][indxexartici]))
 
+        # derived quantities
+        ## photometric noise in the TESS passband
+        tdpy.setp_dict(dicttoii, 'noistess', retr_noisphot(dicttoii['tmagsyst'][0], 'TESS'))
+        
+        ## atmospheric characterization
         # calculate TSM and ESM
         calc_tsmmesmm(dicttoii, strgelem=strgelem)
     
