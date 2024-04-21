@@ -461,7 +461,22 @@ def retr_dictfluxband(tmptstar, liststrgband, gdatfluxband=None, pathvisutarg=No
                 import sncosmo
                 strgband = liststrgband[pl][4]
                 functraninit = sncosmo.get_bandpass(f'lsst%s' % strgband)
+                print('')
+                print('')
+                print('')
+                print('')
+                print('')
+                print('gdatfluxband.midpwlen')
+                summgene(gdatfluxband.midpwlen)
+                print('functraninit.wave')
+                summgene(functraninit.wave)
+                print('functraninit.trans')
+                summgene(functraninit.trans)
+                print('specbbod')
+                summgene(specbbod)
                 gdatfluxband.functran[pl] = np.interp(gdatfluxband.midpwlen, 1e-4 * functraninit.wave, functraninit.trans)
+                print('gdatfluxband.functran[pl]')
+                summgene(gdatfluxband.functran[pl])
             else:
                 gdatfluxband.functran[pl] = np.zeros_like(gdatfluxband.midpwlen)
                 
