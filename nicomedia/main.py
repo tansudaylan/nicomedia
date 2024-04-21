@@ -412,95 +412,117 @@ def retr_listcolrcomp(numbcomp):
     return listcolrcomp
 
 
-def retr_dictspec(radistar, tmptstar, diststar, liststrgband):
+def retr_dictfluxband(tmptstar, liststrgband, gdatfluxband=None, pathvisutarg=None, strgtarg=None, typefileplot='png', \
+              # type of verbosity
+              ## -1: absolutely no text
+              ##  0: no text output except critical warnings
+              ##  1: minimal description of the execution
+              ##  2: detailed description of the execution
+              typeverb=1, \
+              ):
             
-    print('Calculating the magnitudes of the target based on radii, temperatures and distance...')
+    print('Calculating the band fluxes of the target...')
     
-    dictspec = dict()
+    dictfluxband = dict()
+    
+    boolconsgdat = gdatfluxband is None
+    
+    if boolconsgdat:
+        # construct global object
+        gdatfluxband = tdpy.gdatstrt()
 
-    # define spectral grid (this may need to be taken outside the if statements for other purposes)
-    minmwlen = 0.1
-    maxmwlen = 10.
-    numbwlen = 1000
-    dictspec['binsgrid'], dictspec['midpgrid'], _, _, _ = retr_axis(minmwlen, maxmwlen, numbpntsgrid=numbwlen, scalpara='logt')
+        # define spectral grid (this may need to be taken outside the if statements for other purposes)
+        minmwlen = 0.1
+        maxmwlen = 10.
+        numbwlen = 1000
+        gdatfluxband.binswlen, gdatfluxband.midpwlen, _, _, _ = tdpy.retr_axis(minmwlen, maxmwlen, numbpntsgrid=numbwlen, scalpara='logt')
     
-    dictspec['specsyst '] = tdpy.retr_specbbod(tmptstar, dictspec['midpgrid']) * 4. * np.pi * radistar
+    specbbod = tdpy.retr_specbbod(tmptstar, gdatfluxband.midpwlen)
     
-    gdat.dictspecsyst = dict()
-    gdat.dictfluxsyst = dict()
-    gdat.dictfunctran = dict()
+    gdatfluxband.numbband = len(liststrgband)
+    gdatfluxband.indxband = np.arange(gdatfluxband.numbband)
     
-    gdat.numbband = len(gdat.liststrgband)
-    gdat.indxband = np.arange(gdat.numbband)
+    if pathvisutarg is not None:
+        path = pathvisutarg + 'fluxband_%s' % strgtarg
+        for pl in gdatfluxband.indxband:
+            path += '_' + liststrgband[pl]
+        path += '.%s' % typefileplot
+        if not os.path.exists(path):
+            figr, axis = plt.subplots(figsize=(8, 5))
+            axistwin = axis.twinx()
+            axis.plot(gdatfluxband.midpwlen, gdatfluxband.fluxbandsyst, color=colrdraw, ls='-', ms=1, rasterized=True)
     
-    path = gdat.pathvisutarg + 'spec_%s' % gdat.strgtarg
-    for pl in gdat.indxband:
-        path += '_' + gdat.liststrgband[pl]
-    path += '.%s' % gdat.typefileplot
-    if not os.path.exists(path):
-        figr, axis = plt.subplots(figsize=gdat.figrsizeydob)
-        axistwin = axis.twinx()
-        axis.plot(gdat.midpwlen, gdat.specsyst, color=colrdraw, ls='-', ms=1, rasterized=True)
+    gdatfluxband.functran = [[] for pl in gdatfluxband.indxband]
+    for pl in gdatfluxband.indxband:
+        
+        if boolconsgdat:
+        
+            if liststrgband[pl].startswith('LSST'):
+                import sncosmo
+                strgband = liststrgband[pl][4]
+                functraninit = sncosmo.get_bandpass(f'lsst%s' % strgband)
+                gdatfluxband.functran[pl] = np.interp(gdatfluxband.midpwlen, 1e-4 * functraninit.wave, functraninit.trans)
+            else:
+                gdatfluxband.functran[pl] = np.zeros_like(gdatfluxband.midpwlen)
+                
+                if liststrgband[pl] == 'ULTRASAT':
+                    indxwlen = np.where((gdatfluxband.midpwlen < 0.29) & (gdatfluxband.midpwlen > 0.23))[0]
+                    gdatfluxband.functran[pl][indxwlen] = 1.
+                elif liststrgband[pl] == 'TESS-GEO-UV':
+                    indxwlen = np.where((gdatfluxband.midpwlen < 0.29) & (gdatfluxband.midpwlen > 0.23))[0]
+                    gdatfluxband.functran[pl][indxwlen] = 1.
+                elif liststrgband[pl] == 'TESS-GEO-VIS':
+                    indxwlen = np.where((gdatfluxband.midpwlen < 0.7) & (gdatfluxband.midpwlen > 0.4))[0]
+                    gdatfluxband.functran[pl][indxwlen] = 1.
+                elif liststrgband[pl] == 'TESS':
+                    indxwlen = np.where((gdatfluxband.midpwlen < 1.) & (gdatfluxband.midpwlen > 0.6))[0]
+                    gdatfluxband.functran[pl][indxwlen] = 1.
+                
+                #elif liststrgband[pl].startswith('LSST'):
+                #    print('strgband')
+                #    print(strgband)
+                #    print(liststrgband[pl])
+                #    if strgband == 'u':
+                #        indxwlen = np.where((gdatfluxband.midpwlen < 0.4) & (gdatfluxband.midpwlen > 0.3))[0]
+                #    if strgband == 'b':
+                #        indxwlen = np.where((gdatfluxband.midpwlen < 0.4) & (gdatfluxband.midpwlen > 0.3))[0]
+                #    if strgband == 'r':
+                #        indxwlen = np.where((gdatfluxband.midpwlen < 1.) & (gdatfluxband.midpwlen > 0.6))[0]
+                #    gdatfluxband.functran[pl][indxwlen][:] = 1.
+                
+                elif liststrgband[pl] == 'Bolometric':
+                    gdatfluxband.functran[pl][indxwlen][:] = 1.
+                else:
+                    print('')
+                    print('')
+                    print('')
+                    print('liststrgband[pl]')
+                    print(liststrgband[pl])
+                    raise Exception('Undefined liststrgband[pl]')
+        
+            if pathvisutarg is not None and not os.path.exists(path) and liststrgband[pl] != 'Bolometric':
+                axistwin.plot(gdatfluxband.midpwlen, gdatfluxband[liststrgband[pl]], ls='-', ms=1, rasterized=True, label=liststrgband[pl])
     
-    for pl in gdat.indxband:
-        
-        gdat.dictfunctran[gdat.liststrgband[pl]] = np.zeros_like(gdat.midpwlen)
-        
-        if gdat.liststrgband[pl] == 'ULTRASAT':
-            indxwlen = np.where((gdat.midpwlen < 0.29) & (gdat.midpwlen > 0.23))[0]
-            gdat.dictfunctran[gdat.liststrgband[pl]][indxwlen] = 1.
-            pntszero = 20.
-        
-        elif gdat.liststrgband[pl] == 'TESS-GEO-UV':
-            indxwlen = np.where((gdat.midpwlen < 0.29) & (gdat.midpwlen > 0.23))[0]
-            gdat.dictfunctran[gdat.liststrgband[pl]][indxwlen] = 1.
-            pntszero = 20.
-        
-        elif gdat.liststrgband[pl] == 'TESS-GEO-VIS':
-            indxwlen = np.where((gdat.midpwlen < 0.7) & (gdat.midpwlen > 0.4))[0]
-            gdat.dictfunctran[gdat.liststrgband[pl]][indxwlen] = 1.
-            pntszero = 20.
-        
-        elif gdat.liststrgband[pl] == 'TESS':
-            indxwlen = np.where((gdat.midpwlen < 1.) & (gdat.midpwlen > 0.6))[0]
-            gdat.dictfunctran[gdat.liststrgband[pl]][indxwlen] = 1.
-            pntszero = 20.
-        
-        elif gdat.liststrgband[pl].startswith('LSST'):
-            strgband = gdat.liststrgband[pl][-5]
-            gdat.dictfunctran[gdat.liststrgband[pl]][:] = 1.
-            pntszero = 20.
-        
-        elif gdat.liststrgband[pl] == 'Bolometric':
-            gdat.dictfunctran[gdat.liststrgband[pl]][:] = 1.
-            pntszero = 20.
-        
-        else:
-            print('')
-            print('')
-            print('')
-            print('gdat.liststrgband[pl]')
-            print(gdat.liststrgband[pl])
-            raise Exception('Undefined gdat.liststrgband[pl]')
-        
-        gdat.dictspecsyst[gdat.liststrgband[pl]] = np.trapz(gdat.specsyst * gdat.dictfunctran[gdat.liststrgband[pl]], x=gdat.midpwlen)
-        gdat.dictfluxsyst[gdat.liststrgband[pl]] = gdat.dictspecsyst[gdat.liststrgband[pl]] / 4. / np.pi / gdat.true.distsyst**2
-        gdat.dictmagtsyst[gdat.liststrgband[pl]] = pntszero - 2.5 * np.log10(gdat.dictfluxsyst[gdat.liststrgband[pl]])
+        print('specbbod')
+        summgene(specbbod)
+        print('gdatfluxband.functran[pl]')
+        summgene(gdatfluxband.functran[pl])
+        dictfluxband[liststrgband[pl]] = np.trapz(specbbod * gdatfluxband.functran[pl], x=gdatfluxband.midpwlen)
     
-        if not os.path.exists(path) and gdat.liststrgband[pl] != 'Bolometric':
-            axistwin.plot(gdat.midpwlen, gdat.dictfunctran[gdat.liststrgband[pl]], ls='-', ms=1, rasterized=True, label=gdat.liststrgband[pl])
+    if boolconsgdat:
+        if pathvisutarg is not None:
+            axis.set_xscale('log')
+            axis.set_xlabel('Wavelength [$\mu$m]')
+            axis.set_ylabel('Spectrum')
+            axistwin.legend()
+            axistwin.set_ylabel('Transfer function')
+            plt.subplots_adjust(hspace=0.)
+            if gdat.typeverb > 0:
+                print('Writing to %s...' % path)
+            plt.savefig(path)
+            plt.close()
     
-    if not os.path.exists(path):
-        axis.set_xscale('log')
-        axis.set_xlabel('Wavelength [$\mu$m]')
-        axis.set_ylabel('Spectrum')
-        axistwin.legend()
-        axistwin.set_ylabel('Transfer function')
-        plt.subplots_adjust(hspace=0.)
-        if gdat.typeverb > 0:
-            print('Writing to %s...' % path)
-        plt.savefig(path)
-        plt.close()
+    return dictfluxband, gdatfluxband
 
 
 def plot_orbt( \
@@ -1331,14 +1353,62 @@ def retr_scalheig(tmptplan, massplan, radicomp):
     return scalheig
 
 
+def retr_pntszero(strginst):
+
+    if strginst == 'TESS':
+        pntszero = 20.4
+
+    elif strginst == 'LSSTuband':
+        pntszero = 20.4
+    elif strginst == 'LSSTgband':
+        pntszero = 20.4
+    elif strginst == 'LSSTrband':
+        pntszero = 20.4
+    elif strginst == 'LSSTiband':
+        pntszero = 20.4
+    elif strginst == 'LSSTzband':
+        pntszero = 20.4
+    elif strginst == 'LSSTyband':
+        pntszero = 20.4
+    
+    return pntszero
+
+
+def retr_magtfromflux(flux, strginst):
+    
+    pntszero = retr_pntszero(strginst)
+
+    magt = -2.5 * np.log10(flux) + pntszero
+    
+    #mlikmagttemp = 10**((mlikmagttemp - 20.424) / (-2.5))
+    #stdvmagttemp = mlikmagttemp * stdvmagttemp / 1.09
+    #gdat.stdvmagtrefr = 1.09 * gdat.stdvrefrrflx[o] / gdat.refrrflx[o]
+    
+    return magt
+
+
+def retr_fluxfrommagt(dmag, strginst, stdvmagt=None):
+    
+    pntszero = retr_pntszero(strginst)
+    
+    flux = 10**(-(magt - pntszero) / 2.5)
+
+    if stdvmagt is not None:
+        stdvrflx = np.log(10.) / 2.5 * rflx * stdvdmag
+        return flux, stdvflux
+    else:
+        return flux
+
+
 def retr_rflxfromdmag(dmag, stdvdmag=None):
     
     rflx = 10**(-dmag / 2.5)
 
     if stdvdmag is not None:
         stdvrflx = np.log(10.) / 2.5 * rflx * stdvdmag
-    
-    return rflx, stdvrflx
+        return rflx, stdvrflx
+    else:
+        return rflx
 
 
 def retr_dictexar( \
@@ -1852,18 +1922,6 @@ def retr_noisphot(magtinpt, strginst, typeoutp='intplite'):
     return nois
 
 
-def retr_tmag(gdat, cntp):
-    
-    tmag = -2.5 * np.log10(cntp / 1.5e4 / gdat.listcade) + 10
-    #tmag = -2.5 * np.log10(mlikfluxtemp) + 20.424
-    
-    #mlikmagttemp = 10**((mlikmagttemp - 20.424) / (-2.5))
-    #stdvmagttemp = mlikmagttemp * stdvmagttemp / 1.09
-    #gdat.stdvmagtrefr = 1.09 * gdat.stdvrefrrflx[o] / gdat.refrrflx[o]
-    
-    return tmag
-
-
 def retr_subp(dictpopl, dictnumbsamp, dictindxsamp, namepoplinit, namepoplfinl, indx):
     
     if isinstance(indx, list):
@@ -1956,6 +2014,9 @@ def retr_dictpoplstarcomp( \
                           # Boolean flag to diagnose
                           booldiag=True, \
                           
+                          # list of bands
+                          liststrgband=None, \
+                          
                          ):
     '''
     Sample a synthetic population of the features of companions (e.g., exoplanets )and the companions to companions (e.g., exomoons) 
@@ -2005,66 +2066,77 @@ def retr_dictpoplstarcomp( \
     
     dictfact = tdpy.retr_factconv()
     
+    # number of systems
+    if numbsyst is None:
+        if typepoplsyst == 'SyntheticPopulation':
+            numbsyst = 10000
+    
+    indxsyst = np.arange(numbsyst)
+
     # get the features of the star population
     if typepoplsyst.startswith('CTL') or typepoplsyst.startswith('TIC'):
-        dictpopl['star'][namepoplstartotl] = retr_dictpopltic8(typepoplsyst, numbsyst=numbsyst)
+        dictstar = retr_dictpopltic8(typepoplsyst, numbsyst=numbsyst)
         
         print('Removing stars that do not have radii or masses...')
-        indx = np.where(np.isfinite(dictpopl['star'][namepoplstartotl]['radistar']) & \
-                        np.isfinite(dictpopl['star'][namepoplstartotl]['massstar']))[0]
-        for name in dictpopl['star'][namepoplstartotl].keys():
-            dictpopl['star'][namepoplstartotl][name] = dictpopl['star'][namepoplstartotl][name][indx]
+        indx = np.where(np.isfinite(dictstar['radistar']) & \
+                        np.isfinite(dictstar['massstar']))[0]
+        for name in dictstar.keys():
+            dictstar[name] = dictstar[name][indx]
 
-        if (dictpopl['star'][namepoplstartotl]['rascstar'] > 1e4).any():
+        if (dictstar['rascstar'] > 1e4).any():
             raise Exception('')
 
-        if (dictpopl['star'][namepoplstartotl]['radistar'] == 0.).any():
+        if (dictstar['radistar'] == 0.).any():
             raise Exception('')
 
-        dictpopl['star'][namepoplstartotl]['densstar'] = 1.41 * dictpopl['star'][namepoplstartotl]['massstar'] / dictpopl['star'][namepoplstartotl]['radistar']**3
-        dictpopl['star'][namepoplstartotl]['idenstar'] = dictpopl['star'][namepoplstartotl]['TICID']
+        dictstar['densstar'] = 1.41 * dictstar['massstar'] / dictstar['radistar']**3
+        dictstar['idenstar'] = dictstar['TICID']
     
 
     elif typepoplsyst == 'SyntheticPopulation':
         
-        if numbsyst is None:
-            numbsyst = 10000
+        dictstar = dict()
         
-        dictpopl['star'][namepoplstartotl] = dict()
-        
-        dictpopl['star'][namepoplstartotl]['distsyst'] = [tdpy.icdf_powr(np.random.rand(numbsyst), 100., 7000., -2.), 'pc']
+        dictstar['distsyst'] = [tdpy.icdf_powr(np.random.rand(numbsyst), 100., 7000., -2.), 'pc']
         
         if typestar == 'sunl':
-            dictpopl['star'][namepoplstartotl]['radistar'] = [np.ones(numbsyst), '$R_{\odot}$']
-            dictpopl['star'][namepoplstartotl]['massstar'] = [np.ones(numbsyst), '$M_{\odot}$']
-            dictpopl['star'][namepoplstartotl]['densstar'] = [1.4 * np.ones(numbsyst), 'g cm$^{-3}$']
+            dictstar['radistar'] = [np.ones(numbsyst), '$R_{\odot}$']
+            dictstar['massstar'] = [np.ones(numbsyst), '$M_{\odot}$']
+            dictstar['densstar'] = [1.4 * np.ones(numbsyst), 'g cm$^{-3}$']
         elif typestar == 'drawkrou':
-            dictpopl['star'][namepoplstartotl]['massstar'] = [tdpy.icdf_powr(np.random.rand(numbsyst), 0.1, 10., 2.), '$M_{\odot}$']
-            dictpopl['star'][namepoplstartotl]['densstar'] = [1.4 * (1. / dictpopl['star'][namepoplstartotl]['massstar'][0])**(0.7), 'g cm$^{-3}$']
-            dictpopl['star'][namepoplstartotl]['radistar'] = [(1.4 * dictpopl['star'][namepoplstartotl]['massstar'][0] / \
-                                                                                        dictpopl['star'][namepoplstartotl]['densstar'][0])**(1. / 3.), '$R_{\odot}$']
+            dictstar['massstar'] = [tdpy.icdf_powr(np.random.rand(numbsyst), 0.1, 10., 2.), '$M_{\odot}$']
+            dictstar['densstar'] = [1.4 * (1. / dictstar['massstar'][0])**(0.7), 'g cm$^{-3}$']
+            dictstar['radistar'] = [(1.4 * dictstar['massstar'][0] / \
+                                                                                        dictstar['densstar'][0])**(1. / 3.), '$R_{\odot}$']
             raise Exception('To be implemented')
         elif typestar == 'wdwf':
-            dictpopl['star'][namepoplstartotl]['radistar'] = [0.01 * np.ones(numbsyst), '$R_{\odot}$']
-            dictpopl['star'][namepoplstartotl]['massstar'] = [np.ones(numbsyst), '$M_{\odot}$']
-            dictpopl['star'][namepoplstartotl]['densstar'] = [1.4e6 * np.ones(numbsyst), 'g cm$^{-3}$']
+            dictstar['radistar'] = [0.01 * np.ones(numbsyst), '$R_{\odot}$']
+            dictstar['massstar'] = [np.ones(numbsyst), '$M_{\odot}$']
+            dictstar['densstar'] = [1.4e6 * np.ones(numbsyst), 'g cm$^{-3}$']
         else:
             raise Exception('')
 
-        dictpopl['star'][namepoplstartotl]['coeflmdklinr'] = [0.4 * np.ones(numbsyst), '']
-        dictpopl['star'][namepoplstartotl]['coeflmdkquad'] = [0.25 * np.ones(numbsyst), '']
+        dictstar['coeflmdklinr'] = [0.4 * np.ones(numbsyst), '']
+        dictstar['coeflmdkquad'] = [0.25 * np.ones(numbsyst), '']
 
-        dictpopl['star'][namepoplstartotl]['lumistar'] = [dictpopl['star'][namepoplstartotl]['massstar'][0]**4, '$L_{\odot}$']
+        dictstar['tmptstar'] = [6000 * dictstar['massstar'][0], 'K']
         
-        dictpopl['star'][namepoplstartotl]['tmag'] = [1. * (-2.5) * np.log10(dictpopl['star'][namepoplstartotl]['lumistar'][0] / \
-                                                                                        dictpopl['star'][namepoplstartotl]['distsyst'][0]**2), 'mag']
+        dictstar['lumistar'] = [4. * np.pi * dictstar['tmptstar'][0]**4 * dictstar['radistar'][0]**2, '$L_{\odot}$']
         
-        if typepoplsyst == 'lsstwfds':
-            dictpopl['star'][namepoplstartotl]['rmag'] = -2.5 * np.log10(dictpopl['star'][namepoplstartotl]['lumistar'] / dictpopl['star'][namepoplstartotl]['distsyst']**2)
-            
-            indx = np.where((dictpopl['star'][namepoplstartotl]['rmag'] < 24.) & (dictpopl['star'][namepoplstartotl]['rmag'] > 15.))[0]
-            for namefeat in ['distsyst', 'rmag', 'massstar', 'densstar', 'radistar', 'lumistar']:
-                dictpopl['star'][namepoplstartotl][namefeat][0] = dictpopl['star'][namepoplstartotl][namefeat][0][indx]
+        dictstar['fluxbolostar'] = [1361. * dictstar['lumistar'][0] / dictstar['distsyst'][0]**2 / 4. / np.pi, 'W/m^2']
+
+        if liststrgband is None:
+            liststrgband = []
+            if typepoplsyst == 'lsstwfds':
+                liststrgband += ['r']
+        
+        gdatfluxband = None
+        for k in indxsyst: 
+            print('liststrgband')
+            print(liststrgband)
+            dictfluxband, gdatfluxband = retr_dictfluxband(dictstar['tmptstar'][0][k], liststrgband, gdatfluxband=gdatfluxband)
+            for strgband in liststrgband:
+                dictstar['magtsyst%s' % strgband] = [retr_magtfromflux(dictfluxband[strgband], strgband), 'mag']
 
     else:
         print('')
@@ -2074,19 +2146,15 @@ def retr_dictpoplstarcomp( \
         print(typepoplsyst)
         raise Exception('Undefined typepoplsyst.')
     
-    # number of stars
-    numbstar = dictpopl['star'][namepoplstartotl]['radistar'][0].size
-    
-    dictstarnumbsamp[namepoplstartotl] = numbstar
-
-    numbsyst = len(dictpopl['star'][namepoplstartotl]['radistar'][0])
-    indxsyst = np.arange(numbsyst)
-
+    dictstarnumbsamp[namepoplstartotl] = numbsyst
+    dictpopl['star'][namepoplstartotl] = dictstar
     # total mass
-    dictpopl['star'][namepoplstartotl]['masssyst'] = [[], []]
-    dictpopl['star'][namepoplstartotl]['masssyst'][0] = np.copy(dictpopl['star'][namepoplstartotl]['massstar'][0])
-    dictpopl['star'][namepoplstartotl]['masssyst'][1] = dictpopl['star'][namepoplstartotl]['massstar'][1]
+    dictstar['masssyst'] = [[], []]
+    dictstar['masssyst'][0] = np.copy(dictstar['massstar'][0])
+    dictstar['masssyst'][1] = dictstar['massstar'][1]
     
+    numbstar = numbsyst
+
     dictindx = dict()
     dictnumbsamp = dict()
     dictindxsamp = dict()
@@ -2671,7 +2739,7 @@ def retr_dictpoplstarcomp( \
             for namespop in dictpopl[namepopl]:
                 for namefeat in dictpopl[namepopl][namespop]:
                     if len(dictpopl[namepopl][namespop][namefeat]) != 2 or \
-                            len(dictpopl[namepopl][namespop][namefeat][1]) > 0 and not isinstance(dictpopl[namepopl][namespop][namefeat][1][1], str):
+                            len(dictpopl[namepopl][namespop][namefeat][1]) > 0 and not isinstance(dictpopl[namepopl][namespop][namefeat][1][0], str):
                         print('')
                         print('')
                         print('')
@@ -2679,10 +2747,10 @@ def retr_dictpoplstarcomp( \
                         print(namepopl)
                         print('namespop')
                         print(namespop)
-                        print('dictpopl[name][nameseco][namefeat]')
-                        print(dictpopl[name][nameseco][namefeat])
-                        print('len(dictpopl[name][nameseco][namefeat])')
-                        print(len(dictpopl[name][nameseco][namefeat]))
+                        print('namefeat')
+                        print(namefeat)
+                        print('dictpopl[namepopl][namespop][namefeat]')
+                        print(dictpopl[namepopl][namespop][namefeat])
                         raise Exception('dictpopl is not properly defined.')
 
     dictnico['dictpopl'] = dictpopl
