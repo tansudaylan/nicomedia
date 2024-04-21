@@ -74,7 +74,7 @@ def quer_mast(request):
     return head, content
 
 
-def xmat_tici(listtici):
+def xmat_tici(listtici, dictnamefeatmast):
     '''
     Crossmatch with the TESS Input Catalog (TIC)'''
     if len(listtici) == 0:
@@ -96,8 +96,13 @@ def xmat_tici(listtici):
     headers, outString = quer_mast(request)
     dictquertemp = json.loads(outString)['data']
     dictquer = dict()
-    dictquer['rad'] = [dictquertemp['rad'], 'R_{\oplus}']
-    dictquer['mass'] = [dictquertemp['mass'], 'M_{\oplus}']
+    for namefeat in dictnamefeatmast:
+        dictquer[dictnamefeatmast[namefeat]] = []
+        for k in range(len(dictquertemp)):
+            dictquer[dictnamefeatmast[namefeat]].append(dictquertemp[k][namefeat])
+        dictquer[dictnamefeatmast[namefeat]] = [np.array([dictquer[dictnamefeatmast[namefeat]]]), '']
+    dictquer['radistar'][1] = 'R_{\oplus}'
+    dictquer['massstar'][1] = 'M_{\oplus}'
     
     return dictquer
 
@@ -201,17 +206,17 @@ def retr_dictpopltic8( \
     if not os.path.exists(path):
         
         # dictionary of strings that will be keys of the output dictionary
-        dictstrg = dict()
-        dictstrg['ID'] = 'TICID'
-        dictstrg['ra'] = 'rascstar'
-        dictstrg['dec'] = 'declstar'
-        dictstrg['Tmag'] = 'tmag'
-        dictstrg['rad'] = 'radistar'
-        dictstrg['mass'] = 'massstar'
-        dictstrg['Teff'] = 'tmptstar'
-        dictstrg['logg'] = 'loggstar'
-        dictstrg['MH'] = 'metastar'
-        liststrg = list(dictstrg.keys())
+        dictnamefeatmast = dict()
+        dictnamefeatmast['ID'] = 'TICID'
+        dictnamefeatmast['ra'] = 'rascstar'
+        dictnamefeatmast['dec'] = 'declstar'
+        dictnamefeatmast['Tmag'] = 'tmag'
+        dictnamefeatmast['rad'] = 'radistar'
+        dictnamefeatmast['mass'] = 'massstar'
+        dictnamefeatmast['Teff'] = 'tmptstar'
+        dictnamefeatmast['logg'] = 'loggstar'
+        dictnamefeatmast['MH'] = 'metastar'
+        liststrg = list(dictnamefeatmast.keys())
         
         print('typepopl')
         print(typepopl)
@@ -254,24 +259,26 @@ def retr_dictpopltic8( \
                     print('%d observed %s targets in Sector %d...' % (numbtargtsec, labltemp, listtsec[o]))
                 
                 if numbtargtsec > 0:
-                    dictquertemp = xmat_tici(listticitsec)
+                    dictquertemp = xmat_tici(listticitsec, dictnamefeatmast)
                 
                 if o == 0:
                     dictquerinte = dict()
-                    for name in dictstrg.keys():
-                        dictquerinte[dictstrg[name]] = [[] for o in indxtsec]
+                    for name in dictnamefeatmast.keys():
+                        dictquerinte[dictnamefeatmast[name]] = [[] for o in indxtsec]
                 
-                for name in dictstrg.keys():
-                    for k in range(len(dictquertemp)):
-                        dictquerinte[dictstrg[name]][o].append(dictquertemp[k][name])
+                for name in dictnamefeatmast.keys():
+                    print('dictquertemp')
+                    print(dictquertemp)
+                    for k in range(len(dictquertemp[dictnamefeatmast[name]][0])):
+                        dictquerinte[dictnamefeatmast[name]][o].append(dictquertemp[dictnamefeatmast[name]][k][0])
 
             print('Concatenating arrays from different sectors...')
-            for name in dictstrg.keys():
-                dictquer[dictstrg[name]] = np.concatenate(dictquerinte[dictstrg[name]])
+            for name in dictnamefeatmast.keys():
+                dictquer[dictnamefeatmast[name]] = np.concatenate(dictquerinte[dictnamefeatmast[name]])
             
             u, indxuniq, cnts = np.unique(dictquer['TICID'], return_index=True, return_counts=True)
-            for name in dictstrg.keys():
-                dictquer[dictstrg[name]] = dictquer[dictstrg[name]][indxuniq]
+            for name in dictnamefeatmast.keys():
+                dictquer[dictnamefeatmast[name]] = dictquer[dictnamefeatmast[name]][indxuniq]
             dictquer['numbtsec'] = cnts
 
         elif typepopl.startswith('TIC'):
@@ -421,8 +428,6 @@ def retr_dictfluxband(tmptstar, liststrgband, gdatfluxband=None, pathvisutarg=No
               typeverb=1, \
               ):
             
-    print('Calculating the band fluxes of the target...')
-    
     dictfluxband = dict()
     
     boolconsgdat = gdatfluxband is None
@@ -430,6 +435,9 @@ def retr_dictfluxband(tmptstar, liststrgband, gdatfluxband=None, pathvisutarg=No
     if boolconsgdat:
         # construct global object
         gdatfluxband = tdpy.gdatstrt()
+        
+        # dictionary for the transfer functions
+        gdatfluxband.dictfunctran = dict()
 
         # define spectral grid (this may need to be taken outside the if statements for other purposes)
         minmwlen = 0.1
@@ -437,10 +445,10 @@ def retr_dictfluxband(tmptstar, liststrgband, gdatfluxband=None, pathvisutarg=No
         numbwlen = 1000
         gdatfluxband.binswlen, gdatfluxband.midpwlen, _, _, _ = tdpy.retr_axis(minmwlen, maxmwlen, numbpntsgrid=numbwlen, scalpara='logt')
     
-    specbbod = tdpy.retr_specbbod(tmptstar, gdatfluxband.midpwlen)
+        gdatfluxband.numbband = len(liststrgband)
+        gdatfluxband.indxband = np.arange(gdatfluxband.numbband)
     
-    gdatfluxband.numbband = len(liststrgband)
-    gdatfluxband.indxband = np.arange(gdatfluxband.numbband)
+    specbbod = tdpy.retr_specbbod(tmptstar, gdatfluxband.midpwlen)
     
     if pathvisutarg is not None:
         path = pathvisutarg + 'fluxband_%s' % strgtarg
@@ -452,7 +460,6 @@ def retr_dictfluxband(tmptstar, liststrgband, gdatfluxband=None, pathvisutarg=No
             axistwin = axis.twinx()
             axis.plot(gdatfluxband.midpwlen, gdatfluxband.fluxbandsyst, color=colrdraw, ls='-', ms=1, rasterized=True)
     
-    gdatfluxband.functran = [[] for pl in gdatfluxband.indxband]
     for pl in gdatfluxband.indxband:
         
         if boolconsgdat:
@@ -461,37 +468,24 @@ def retr_dictfluxband(tmptstar, liststrgband, gdatfluxband=None, pathvisutarg=No
                 import sncosmo
                 strgband = liststrgband[pl][4]
                 functraninit = sncosmo.get_bandpass(f'lsst%s' % strgband)
-                print('')
-                print('')
-                print('')
-                print('')
-                print('')
-                print('gdatfluxband.midpwlen')
-                summgene(gdatfluxband.midpwlen)
-                print('functraninit.wave')
-                summgene(functraninit.wave)
-                print('functraninit.trans')
-                summgene(functraninit.trans)
-                print('specbbod')
-                summgene(specbbod)
-                gdatfluxband.functran[pl] = np.interp(gdatfluxband.midpwlen, 1e-4 * functraninit.wave, functraninit.trans)
-                print('gdatfluxband.functran[pl]')
-                summgene(gdatfluxband.functran[pl])
+                gdatfluxband.dictfunctran[liststrgband[pl]] = np.interp(gdatfluxband.midpwlen, 1e-4 * functraninit.wave, functraninit.trans)
+            elif liststrgband[pl] == 'Bolometric':
+                gdatfluxband.dictfunctran[liststrgband[pl]] = np.ones_like(gdatfluxband.midpwlen)
             else:
-                gdatfluxband.functran[pl] = np.zeros_like(gdatfluxband.midpwlen)
+                gdatfluxband.dictfunctran[liststrgband[pl]] = np.zeros_like(gdatfluxband.midpwlen)
                 
                 if liststrgband[pl] == 'ULTRASAT':
                     indxwlen = np.where((gdatfluxband.midpwlen < 0.29) & (gdatfluxband.midpwlen > 0.23))[0]
-                    gdatfluxband.functran[pl][indxwlen] = 1.
+                    gdatfluxband.dictfunctran[liststrgband[pl]][indxwlen] = 1.
                 elif liststrgband[pl] == 'TESS-GEO-UV':
                     indxwlen = np.where((gdatfluxband.midpwlen < 0.29) & (gdatfluxband.midpwlen > 0.23))[0]
-                    gdatfluxband.functran[pl][indxwlen] = 1.
+                    gdatfluxband.dictfunctran[liststrgband[pl]][indxwlen] = 1.
                 elif liststrgband[pl] == 'TESS-GEO-VIS':
                     indxwlen = np.where((gdatfluxband.midpwlen < 0.7) & (gdatfluxband.midpwlen > 0.4))[0]
-                    gdatfluxband.functran[pl][indxwlen] = 1.
+                    gdatfluxband.dictfunctran[liststrgband[pl]][indxwlen] = 1.
                 elif liststrgband[pl] == 'TESS':
                     indxwlen = np.where((gdatfluxband.midpwlen < 1.) & (gdatfluxband.midpwlen > 0.6))[0]
-                    gdatfluxband.functran[pl][indxwlen] = 1.
+                    gdatfluxband.dictfunctran[liststrgband[pl]][indxwlen] = 1.
                 
                 #elif liststrgband[pl].startswith('LSST'):
                 #    print('strgband')
@@ -503,10 +497,8 @@ def retr_dictfluxband(tmptstar, liststrgband, gdatfluxband=None, pathvisutarg=No
                 #        indxwlen = np.where((gdatfluxband.midpwlen < 0.4) & (gdatfluxband.midpwlen > 0.3))[0]
                 #    if strgband == 'r':
                 #        indxwlen = np.where((gdatfluxband.midpwlen < 1.) & (gdatfluxband.midpwlen > 0.6))[0]
-                #    gdatfluxband.functran[pl][indxwlen][:] = 1.
+                #    gdatfluxband.dictfunctran[liststrgband[pl]][indxwlen][:] = 1.
                 
-                elif liststrgband[pl] == 'Bolometric':
-                    gdatfluxband.functran[pl][indxwlen][:] = 1.
                 else:
                     print('')
                     print('')
@@ -518,11 +510,7 @@ def retr_dictfluxband(tmptstar, liststrgband, gdatfluxband=None, pathvisutarg=No
             if pathvisutarg is not None and not os.path.exists(path) and liststrgband[pl] != 'Bolometric':
                 axistwin.plot(gdatfluxband.midpwlen, gdatfluxband[liststrgband[pl]], ls='-', ms=1, rasterized=True, label=liststrgband[pl])
     
-        print('specbbod')
-        summgene(specbbod)
-        print('gdatfluxband.functran[pl]')
-        summgene(gdatfluxband.functran[pl])
-        dictfluxband[liststrgband[pl]] = np.trapz(specbbod * gdatfluxband.functran[pl], x=gdatfluxband.midpwlen)
+        dictfluxband[liststrgband[pl]] = np.trapz(specbbod * gdatfluxband.dictfunctran[liststrgband[pl]], x=gdatfluxband.midpwlen)
     
     if boolconsgdat:
         if pathvisutarg is not None:
@@ -1385,7 +1373,18 @@ def retr_pntszero(strginst):
         pntszero = 20.4
     elif strginst == 'LSSTyband':
         pntszero = 20.4
-    
+    elif strginst == 'TESS-GEO-UV':
+        pntszero = 20.4
+    elif strginst == 'TESS-GEO-VIS':
+        pntszero = 20.4
+    else:
+        print('')
+        print('')
+        print('')
+        print('strginst')
+        print(strginst)
+        raise Exception('strginst is not defined.')
+
     return pntszero
 
 
@@ -1952,8 +1951,19 @@ def retr_subp(dictpopl, dictnumbsamp, dictindxsamp, namepoplinit, namepoplfinl, 
     for name in dictpopl[namepoplinit].keys():
         dictpopl[namepoplfinl][name] = [[], []]
         
-        # copy the subset of the array
+        if np.isscalar(dictpopl[namepoplinit][name][0]):
+            print('')
+            print('')
+            print('')
+            print('name')
+            print(name)
+            print('indx')
+            print(indx)
+            print('dictpopl[namepoplinit][name]')
+            print(dictpopl[namepoplinit][name])
+            raise Exception('np.isscalar(dictpopl[namepoplinit][name][0])')
         
+        # copy the subset of the array
         if indx.size > 0:
             dictpopl[namepoplfinl][name][0] = dictpopl[namepoplinit][name][0][indx]
         else:
@@ -2146,12 +2156,14 @@ def retr_dictpoplstarcomp( \
                 liststrgband += ['r']
         
         gdatfluxband = None
+        dictstar['fluxbandsyst'] = [np.empty(numbsyst), 'W/m^2']
         for k in indxsyst: 
-            print('liststrgband')
-            print(liststrgband)
             dictfluxband, gdatfluxband = retr_dictfluxband(dictstar['tmptstar'][0][k], liststrgband, gdatfluxband=gdatfluxband)
             for strgband in liststrgband:
-                dictstar['magtsyst%s' % strgband] = [retr_magtfromflux(dictfluxband[strgband], strgband), 'mag']
+                dictstar['fluxbandsyst'][0][k] = dictfluxband[strgband]
+        
+        for strgband in liststrgband:
+            dictstar['magtsyst%s' % strgband] = [retr_magtfromflux(dictstar['fluxbandsyst'][0], strgband), 'mag']
 
     else:
         print('')
