@@ -274,6 +274,8 @@ def retr_dictpopltic8( \
 
             print('Concatenating arrays from different sectors...')
             for name in dictnamefeatmast.keys():
+                print('dictquerinte[dictnamefeatmast[name]]')
+                print(dictquerinte[dictnamefeatmast[name]])
                 dictquer[dictnamefeatmast[name]] = np.concatenate(dictquerinte[dictnamefeatmast[name]])
             
             u, indxuniq, cnts = np.unique(dictquer['TICID'], return_index=True, return_counts=True)
@@ -1362,17 +1364,17 @@ def retr_pntszero(strginst):
         pntszero = 20.4
 
     elif strginst == 'LSSTuband':
-        pntszero = 20.4
+        pntszero = 22.4
     elif strginst == 'LSSTgband':
-        pntszero = 20.4
+        pntszero = 22.4
     elif strginst == 'LSSTrband':
-        pntszero = 20.4
+        pntszero = 22.4
     elif strginst == 'LSSTiband':
-        pntszero = 20.4
+        pntszero = 22.4
     elif strginst == 'LSSTzband':
-        pntszero = 20.4
+        pntszero = 22.4
     elif strginst == 'LSSTyband':
-        pntszero = 20.4
+        pntszero = 22.4
     elif strginst == 'TESS-GEO-UV':
         pntszero = 20.4
     elif strginst == 'TESS-GEO-VIS':
@@ -1883,7 +1885,7 @@ def retr_logg(radi, mass):
     return logg
 
 
-def retr_noisphot(magtinpt, strginst, typeoutp='intplite'):
+def retr_noisphot(magtinpt, strginst, typeoutp='intplite', booldiag=True):
     '''
     TESS photometric precision (over what time scale?)
     ''' 
@@ -1932,6 +1934,18 @@ def retr_noisphot(magtinpt, strginst, typeoutp='intplite'):
         print('strginst')
         print(strginst)
         raise Exception('')
+
+    if booldiag:
+        if not np.isfinite(nois).all():
+            print('')
+            print('')
+            print('')
+            print('magtinpt')
+            summgene(magtinpt)
+            print('strginst')
+            print(strginst)
+            print('Magnitude could be saturated.')
+            raise Exception('not np.isfinite(nois).all()')
 
     return nois
 
@@ -2022,7 +2036,7 @@ def retr_dictpoplstarcomp( \
                           #maxmpericomp=1000., \
                           
                           # Boolean flag to force all companions to be transiting
-                          booltrancomp=True, \
+                          booltrancomp=False, \
 
                           # maximum cosine of inclination if booltrancomp is False
                           maxmcosicomp=None, \
