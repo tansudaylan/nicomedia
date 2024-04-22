@@ -276,6 +276,10 @@ def retr_dictpopltic8( \
             for name in dictnamefeatmast.keys():
                 print('dictquerinte[dictnamefeatmast[name]]')
                 print(dictquerinte[dictnamefeatmast[name]])
+                for temp in dictquerinte[dictnamefeatmast[name]]:
+                    print('temp')
+                    summgene(temp)
+                print('')
                 dictquer[dictnamefeatmast[name]] = np.concatenate(dictquerinte[dictnamefeatmast[name]])
             
             u, indxuniq, cnts = np.unique(dictquer['TICID'], return_index=True, return_counts=True)
