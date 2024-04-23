@@ -139,10 +139,10 @@ def retr_dictpopltic8( \
     
     Keyword arguments   
         typepopl: type of the population
-            'ticiprmshcon': TIC targets with contamination larger than
-            'ticim060': TIC targets brighter than TESS magnitude 6.0
-            'ticim100': TIC targets brighter than TESS magnitude 10.0
-            'ticim140': TIC targets brighter than TESS magnitude 14.0
+            'TIC_prmshcon': TIC targets with contamination larger than
+            'TIC_im060': TIC targets brighter than TESS magnitude 6.0
+            'TIC_im100': TIC targets brighter than TESS magnitude 10.0
+            'TIC_im140': TIC targets brighter than TESS magnitude 14.0
             'targtess_prms_ffimm060': TESS targets observed during PM on FFIs brighter than mag 6.0
             'targtess_prms_2min': 2-minute TESS targets obtained by merging the SPOC 2-min bulk downloads
 
@@ -270,7 +270,12 @@ def retr_dictpopltic8( \
                     print('dictquertemp')
                     print(dictquertemp)
                     for k in range(len(dictquertemp[dictnamefeatmast[name]][0])):
-                        dictquerinte[dictnamefeatmast[name]][o].append(dictquertemp[dictnamefeatmast[name]][k][0])
+                        dictquerinte[dictnamefeatmast[name]][o].extend(dictquertemp[dictnamefeatmast[name]][k][0])
+                    print('name')
+                    print(name)
+                    print('dictquerinte[dictnamefeatmast[name]]')
+                    summgene(dictquerinte[dictnamefeatmast[name]])
+                    print('')
 
             print('Concatenating arrays from different sectors...')
             for name in dictnamefeatmast.keys():
@@ -296,6 +301,10 @@ def retr_dictpopltic8( \
                 request = {'service':'Mast.Catalogs.Filtered.Tic.Rows', 'format':'json', 'params':{ \
                 'columns':'ID, ra, dec, Tmag, rad, mass', \
                                                              'filters':[{'paramName':'Tmag', 'values':[{"min":-100., "max":6.0}]}]}}
+            elif typepopl.endswith('m090'):
+                request = {'service':'Mast.Catalogs.Filtered.Tic.Rows', 'format':'json', 'params':{ \
+                'columns':'ID, ra, dec, Tmag, rad, mass', \
+                                                             'filters':[{'paramName':'Tmag', 'values':[{"min":-100., "max":9.0}]}]}}
             elif typepopl.endswith('m100'):
                 request = {'service':'Mast.Catalogs.Filtered.Tic.Rows', 'format':'json', 'params':{ \
                 'columns':'ID, ra, dec, Tmag, rad, mass', \
@@ -2000,7 +2009,7 @@ def retr_dictpoplstarcomp( \
                           typesyst, \
                           
                           # type of the population of target systems
-                          typepoplsyst, \
+                          typepoplsyst=None, \
                           
                           # number of systems
                           numbsyst=None, \
@@ -2068,6 +2077,10 @@ def retr_dictpoplstarcomp( \
     
     print('typesyst')
     print(typesyst)
+    
+    if typepoplsyst is None:
+        typepoplsyst = 'SyntheticPopulation'
+
     print('typepoplsyst')
     print(typepoplsyst)
     
@@ -2526,7 +2539,24 @@ def retr_dictpoplstarcomp( \
                 
                 if dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k] == 0:
                     continue
-
+                
+                print('booltrancomp')
+                print(booltrancomp)
+                print('booltrancomp')
+                print(booltrancomp)
+                print('booltrancomp')
+                print(booltrancomp)
+                print('booltrancomp')
+                print(booltrancomp)
+                print('booltrancomp')
+                print(booltrancomp)
+                print('booltrancomp')
+                print(booltrancomp)
+                print('booltrancomp')
+                print(booltrancomp)
+                print('booltrancomp')
+                print(booltrancomp)
+                
                 if booltrancomp:
                     maxmcosicomptemp = dictpopl[strglimb][namepopllimbtotl]['rsmacomp'][0][k]
                 elif maxmcosicomp is not None:
