@@ -149,7 +149,7 @@ def retr_dictpopltic8( \
     Returns a dictionary with keys:
         rasc: RA
         decl: declination
-        tmag: TESS magnitude
+        magtsystTESS: TESS magnitude
         radistar: radius of the star
         massstar: mass of the star
     '''
@@ -210,7 +210,7 @@ def retr_dictpopltic8( \
         dictnamefeatmast['ID'] = 'TICID'
         dictnamefeatmast['ra'] = 'rascstar'
         dictnamefeatmast['dec'] = 'declstar'
-        dictnamefeatmast['Tmag'] = 'tmag'
+        dictnamefeatmast['Tmag'] = 'magtsystTESS'
         dictnamefeatmast['rad'] = 'radistar'
         dictnamefeatmast['mass'] = 'massstar'
         dictnamefeatmast['Teff'] = 'tmptstar'
@@ -332,7 +332,7 @@ def retr_dictpopltic8( \
                 if name == 'ID':
                     namedict = 'TICID'
                 if name == 'Tmag':
-                    namedict = 'tmag'
+                    namedict = 'magtsystTESS'
                 if name == 'ra':
                     namedict = 'rascstar'
                 if name == 'dec':
@@ -375,7 +375,7 @@ def retr_dictpopltic8( \
     #    indx = np.where((~np.isfinite(gdat.dictfeat['true']['ssys']['massstar'])) | (~np.isfinite(gdat.dictfeat['true']['ssys']['radistar'])))[0]
     #    gdat.dictfeat['true']['ssys']['radistar'][indx] = 1.
     #    gdat.dictfeat['true']['ssys']['massstar'][indx] = 1.
-    #    gdat.dictfeat['true']['totl']['tmag'] = dicttic8['tmag']
+    #    gdat.dictfeat['true']['totl']['magtsystTESS'] = dicttic8['magtsystTESS']
         
     # check if dictquer is properly defined, whose leaves should be a list of two items (of values and labels, respectively)
     if booldiag:
@@ -881,13 +881,13 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
 
         tdpy.setp_dict(dicttoii, 'epocmtra' + strgelem, objtexof['Epoch (BJD)'][indxcomp].values)
 
-        tdpy.setp_dict(dicttoii, 'tmagsyst', objtexof['TESS Mag'][indxcomp].values)
-        tdpy.setp_dict(dicttoii, 'stdvtmagsyst', objtexof['TESS Mag err'][indxcomp].values)
+        tdpy.setp_dict(dicttoii, 'magtsystTESS', objtexof['TESS Mag'][indxcomp].values)
+        tdpy.setp_dict(dicttoii, 'stdvmagtsystTESS', objtexof['TESS Mag err'][indxcomp].values)
 
         # transit duty cycle
         tdpy.setp_dict(dicttoii, 'dcyc', dicttoii['duratrantotl'][0] / dicttoii[strgperielem][0] / 24.)
         
-        liststrgfeatstartici = ['massstar', 'vmagsyst', 'jmagsyst', 'hmagsyst', 'kmagsyst', 'distsyst', 'metastar', 'radistar', 'tmptstar', 'loggstar']
+        liststrgfeatstartici = ['massstar', 'magtsystVbnd', 'magtsystJbnd', 'magtsystHbnd', 'magtsystKbnd', 'distsyst', 'metastar', 'radistar', 'tmptstar', 'loggstar']
         liststrgfeatstarticiinhe = ['mass', 'Vmag', 'Jmag', 'Hmag', 'Kmag', 'd', 'MH', 'rad', 'Teff', 'logg']
         
         numbstrgfeatstartici = len(liststrgfeatstartici)
@@ -1031,7 +1031,7 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
 
         # derived quantities
         ## photometric noise in the TESS passband
-        tdpy.setp_dict(dicttoii, 'noistess', retr_noisphot(dicttoii['tmagsyst'][0], 'TESS'))
+        tdpy.setp_dict(dicttoii, 'noistess', retr_noisphot(dicttoii['magtsystTESS'][0], 'TESS'))
         
         ## atmospheric characterization
         # calculate TSM and ESM
@@ -1093,8 +1093,8 @@ def calc_tsmmesmm(dictpopl, strgelem='comp', boolsamp=False):
                 stdv = dictpopl['stdvradistar'][0][n]
             listradistar = tdpy.samp_gaustrun(numbsamp, dictpopl['radistar'][0][n], stdv, 0., np.inf)
             
-            listkmagsyst = tdpy.icdf_gaus(np.random.rand(numbsamp), dictpopl['kmagsyst'][0][n], dictpopl['stdvkmagsyst'][0][n])
-            listjmagsyst = tdpy.icdf_gaus(np.random.rand(numbsamp), dictpopl['jmagsyst'][0][n], dictpopl['stdvjmagsyst'][0][n])
+            listmagtsystKbnd = tdpy.icdf_gaus(np.random.rand(numbsamp), dictpopl['magtsystKbnd'][0][n], dictpopl['stdvmagtsystKbnd'][0][n])
+            listmagtsystJbnd = tdpy.icdf_gaus(np.random.rand(numbsamp), dictpopl['magtsystJbnd'][0][n], dictpopl['stdvmagtsystJbnd'][0][n])
             listtmptstar = tdpy.samp_gaustrun(numbsamp, dictpopl['tmptstar'][0][n], dictpopl['stdvtmptstar'][0][n], 0., np.inf)
         
         else:
@@ -1102,15 +1102,15 @@ def calc_tsmmesmm(dictpopl, strgelem='comp', boolsamp=False):
             listtmptplan = dictpopl['tmpt%s' % strgelem][0][None, n]
             listmassplan = dictpopl[strgmasselem][0][None, n]
             listradistar = dictpopl['radistar'][0][None, n]
-            listkmagsyst = dictpopl['kmagsyst'][0][None, n]
-            listjmagsyst = dictpopl['jmagsyst'][0][None, n]
+            listmagtsystKbnd = dictpopl['magtsystKbnd'][0][None, n]
+            listmagtsystJbnd = dictpopl['magtsystJbnd'][0][None, n]
             listtmptstar = dictpopl['tmptstar'][0][None, n]
         
         # TSM
-        listtsmm[:, n] = retr_tsmm(listradicomp, listtmptplan, listmassplan, listradistar, listjmagsyst)
+        listtsmm[:, n] = retr_tsmm(listradicomp, listtmptplan, listmassplan, listradistar, listmagtsystJbnd)
 
         # ESM
-        listesmm[:, n] = retr_esmm(listtmptplan, listtmptstar, listradicomp, listradistar, listkmagsyst)
+        listesmm[:, n] = retr_esmm(listtmptplan, listtmptstar, listradicomp, listradistar, listmagtsystKbnd)
         
         #if (listesmm[:, n] < 1e-10).any():
         #    print('listradicomp')
@@ -1121,10 +1121,10 @@ def calc_tsmmesmm(dictpopl, strgelem='comp', boolsamp=False):
         #    summgene(listmassplan)
         #    print('listradistar')
         #    summgene(listradistar)
-        #    print('listkmagsyst')
-        #    summgene(listkmagsyst)
-        #    print('listjmagsyst')
-        #    summgene(listjmagsyst)
+        #    print('listmagtsystKbnd')
+        #    summgene(listmagtsystKbnd)
+        #    print('listmagtsystJbnd')
+        #    summgene(listmagtsystJbnd)
         #    print('listtmptstar')
         #    summgene(listtmptstar)
         #    print('listesmm[:, n]')
@@ -1463,7 +1463,7 @@ def retr_dictexar( \
     
     # variables for which both the quantity and its uncertainty will be retrieved
     liststrgstdv = ['radistar', 'massstar', 'tmptstar', 'loggstar', strgradielem, strgmasselem, 'tmpt'+strgelem, 'tagestar', \
-                    'vmagsyst', 'jmagsyst', 'hmagsyst', 'kmagsyst', 'tmagsyst', 'metastar', 'distsyst', 'lumistar', \
+                    'magtsystVbnd', 'magtsystJbnd', 'magtsystHbnd', 'magtsystKbnd', 'magtsystTESS', 'metastar', 'distsyst', 'lumistar', \
                    ]
         
     strgnumbelemstar = 'numb%sstar' % strgelem
@@ -1566,10 +1566,17 @@ def retr_dictexar( \
         
         for strg in liststrgstdv:
             strgvarbexar = None
+            print('strg')
+            print(strg)
+            if strg.startswith('magtsyst'):
+                strgvarbexar = 'sy_'
+                if strg.endswith('TESS'):
+                    strgextn = 't'
+                elif strg.endswith('bnd'):
+                    strgextn = strg[-4]
+                strgvarbexar += '%smag' % strgextn
             if strg.endswith('syst'):
                 strgvarbexar = 'sy_'
-                if strg[:-4].endswith('mag'):
-                    strgvarbexar += '%smag' % strg[0]
                 if strg[:-4] == 'dist':
                     strgvarbexar += 'dist'
             if strg.endswith('star'):
