@@ -463,7 +463,7 @@ def retr_dictfluxband(tmptstar, liststrgband, gdatfluxband=None, pathvisutarg=No
         gdatfluxband.numbband = len(liststrgband)
         gdatfluxband.indxband = np.arange(gdatfluxband.numbband)
     
-    specbbod = tdpy.retr_specbbod(tmptstar, gdatfluxband.midpwlen)
+    specbbod = tdpy.retr_fluxspecbbod(tmptstar, gdatfluxband.midpwlen)
     
     if pathvisutarg is not None:
         path = pathvisutarg + 'fluxband_%s' % strgtarg
@@ -1199,10 +1199,10 @@ def retr_dilu(tmpttarg, tmptcomp, strgwlentype='tess'):
     meanwlen = (binswlen[1:] + binswlen[:-1]) / 2.
     diffwlen = (binswlen[1:] - binswlen[:-1]) / 2.
     
-    fluxtarg = tdpy.retr_specbbod(tmpttarg, meanwlen)
+    fluxtarg = tdpy.retr_fluxspecbbod(tmpttarg, meanwlen)
     fluxtarg = np.sum(diffwlen * fluxtarg)
     
-    fluxcomp = tdpy.retr_specbbod(tmptcomp, meanwlen)
+    fluxcomp = tdpy.retr_fluxspecbbod(tmptcomp, meanwlen)
     fluxcomp = np.sum(diffwlen * fluxcomp)
     
     dilu = 1. - fluxtarg / (fluxtarg + fluxcomp)
@@ -1351,7 +1351,7 @@ def retr_esmm(tmptplanequi, tmptstar, radicomp, radistar, kmag):
     
     tmptplanirra = tmptplanequi
     tmptplandayy, tmptplannigh = retr_tmptplandayynigh(tmptplanirra, 0.1)
-    esmm = 1.1e3 * tdpy.util.retr_specbbod(tmptplandayy, 7.5) / tdpy.util.retr_specbbod(tmptstar, 7.5) * (radicomp / radistar)*2 * 10**(-kmag / 5.)
+    esmm = 1.1e3 * tdpy.util.retr_fluxspecbbod(tmptplandayy, 7.5) / tdpy.util.retr_fluxspecbbod(tmptstar, 7.5) * (radicomp / radistar)*2 * 10**(-kmag / 5.)
 
     return esmm
 
@@ -1377,17 +1377,17 @@ def retr_pntszero(strginst):
         pntszero = 20.4
 
     elif strginst == 'LSSTuband':
-        pntszero = 22.4
+        pntszero = -15
     elif strginst == 'LSSTgband':
-        pntszero = 22.4
+        pntszero = -15
     elif strginst == 'LSSTrband':
-        pntszero = 22.4
+        pntszero = -15
     elif strginst == 'LSSTiband':
-        pntszero = 22.4
+        pntszero = -15
     elif strginst == 'LSSTzband':
-        pntszero = 22.4
+        pntszero = -15
     elif strginst == 'LSSTyband':
-        pntszero = 22.4
+        pntszero = -15
     elif strginst == 'TESS-GEO-UV':
         pntszero = 20.4
     elif strginst == 'TESS-GEO-VIS':
@@ -1483,9 +1483,12 @@ def retr_dictexar( \
     dictfact = tdpy.retr_factconv()
     
     if indx.size == 0:
-        print('The target name, %s, was not found in the NASA Exoplanet Archive composite table.' % strgexar)
+        
+        print('The target name, %s, was **not** found in the NASA Exoplanet Archive composite table.' % strgexar)
+        
         return None
     else:
+        print('The target name, %s, has been found in the NASA Exoplanet Archive composite table.' % strgexar)
         dictexar = {}
 
         listnamefeat = ['namestar', 'nameplan', 'TICID', 'rascstar', 'declstar', 'TOIID', 'methdisc', 'eccecomp', 'facidisc', 'yeardisc', \
@@ -1566,14 +1569,12 @@ def retr_dictexar( \
         
         for strg in liststrgstdv:
             strgvarbexar = None
-            print('strg')
-            print(strg)
             if strg.startswith('magtsyst'):
                 strgvarbexar = 'sy_'
                 if strg.endswith('TESS'):
                     strgextn = 't'
                 elif strg.endswith('bnd'):
-                    strgextn = strg[-4]
+                    strgextn = strg[-4].lower()
                 strgvarbexar += '%smag' % strgextn
             if strg.endswith('syst'):
                 strgvarbexar = 'sy_'
@@ -1925,10 +1926,13 @@ def retr_noisphot(magtinpt, strginst, typeoutp='intplite', booldiag=True):
             strgband = strginst[-1]
         
         indx = np.where((magtinpt < 20.) & (magtinpt > 15.))
-        nois[indx] = 6. # [ppt]
+        nois[indx] = 0.5 # [ppt over 1 hour]
         
         indx = np.where((magtinpt >= 20.) & (magtinpt < 24.))
-        nois[indx] = 6. * 10**((magtinpt[indx] - 20.) / 3.) # [ppt]
+        nois[indx] = 0.5 * 10**((magtinpt[indx] - 20.) / 3.) # [ppt over 1 hour]
+    
+        indx = np.where(magtinpt >= 24.)
+        nois[indx] = 1000. # [ppt]
     
     elif strginst == 'TESS':
         # interpolate literature values
@@ -2082,6 +2086,7 @@ def retr_dictpoplstarcomp( \
     hosted by a specified or random population of stellar systems.
     '''
     
+    print('Simulating a population of systems via retr_dictpoplstarcomp()...')
     print('typesyst')
     print(typesyst)
     
@@ -2090,6 +2095,10 @@ def retr_dictpoplstarcomp( \
 
     print('typepoplsyst')
     print(typepoplsyst)
+    
+    if booldiag:
+        if maxmcosicomp is not None and (maxmcosicomp > 1 or maxmcosicomp < 0):
+            raise Exception('maxmcosicomp is bad.')
     
     # Boolean flag indicating if the system is a star with a companion
     boolhavecomp = typesyst.startswith('PlanetarySystem') or typesyst == 'CompactObjectStellarCompanion' or typesyst == 'StellarBinary'
@@ -2194,15 +2203,27 @@ def retr_dictpoplstarcomp( \
                 liststrgband += ['r']
         
         gdatfluxband = None
-        dictstar['fluxbandsyst'] = [np.empty(numbsyst), 'W/m^2']
-        for k in indxsyst: 
-            dictfluxband, gdatfluxband = retr_dictfluxband(dictstar['tmptstar'][0][k], liststrgband, gdatfluxband=gdatfluxband)
-            for strgband in liststrgband:
-                dictstar['fluxbandsyst'][0][k] = dictfluxband[strgband]
-        
         for strgband in liststrgband:
-            dictstar['magtsyst%s' % strgband] = [retr_magtfromflux(dictstar['fluxbandsyst'][0], strgband), 'mag']
-
+            dictstar['fluxbandsyst%s' % strgband] = [np.empty(numbsyst), 'W/m^2']
+        for k in indxsyst: 
+            # flux at the surface
+            dictfluxband, gdatfluxband = retr_dictfluxband(dictstar['tmptstar'][0][k], liststrgband, gdatfluxband=gdatfluxband)
+            
+            # flux at the observer
+            for strgband in liststrgband:
+                dictstar['fluxbandsyst%s' % strgband][0][k] = dictfluxband[strgband] * (dictstar['radistar'][0][k] / 4.435e7 / dictstar['distsyst'][0][k])**2
+        
+        print('fluxbandsyst')
+        for strgband in liststrgband:
+            dictstar['magtsyst%s' % strgband] = [retr_magtfromflux(dictstar['fluxbandsyst%s' % strgband][0], strgband), 'mag']
+            
+            print('strgband')
+            print(strgband)
+            print('fluxbandsyst')
+            summgene(dictstar['fluxbandsyst%s' % strgband][0])
+            print('magtsyst')
+            summgene(dictstar['magtsyst%s' % strgband][0])
+            print('')
     else:
         print('')
         print('')
@@ -2357,13 +2378,17 @@ def retr_dictpoplstarcomp( \
         # prepare to load star features into component features
         for name in list(dictpopl[strgbody][namepoplstartotl].keys()):
             dictpopl[strglimb][namepopllimbtotl][name] = [np.empty(dictnumbsamp[strglimb][namepopllimbtotl]), '']
-    
+        
+        print('Loading star features into component features...')
+        print('list(dictpopl[strgbody][namepoplstartotl].keys())')
+        print(list(dictpopl[strgbody][namepoplstartotl].keys()))
+
         dictnumbsamp[strglimb][namepopllimbtotl] = dictpopl[strglimb][namepopllimbtotl]['radistar'][0].size
         
 
         listnamecatr = ['masssyst', 'radistar']
         if strglimb == 'comp':
-            listnamecatr += ['pericomp', 'cosicomp', 'smaxcomp', 'eccecomp', 'arpacomp', 'loancomp', 'masscomp', 'epocmtracomp', 'rsmacomp']
+            listnamecatr += ['pericomp', 'cosicomp', 'smaxcomp', 'eccecomp', 'arpacomp', 'loancomp', 'masscomp', 'epocmtracomp', 'rsmacomp', 'rsumcomp']
             if typesyst == 'PlanetarySystemWithMoons':
                 listnamecatr += ['masscompmoon']
             if typesyst == 'PlanetarySystemWithNonKeplerianObjects':
@@ -2401,7 +2426,6 @@ def retr_dictpoplstarcomp( \
                 raise Exception('cntr != dictnumbsamp[strglimb][namepopllimbtotl]')
     
         print('Sampling features...')
-    
         for k in tqdm(range(numbstar)):
             
             if dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k] == 0:
@@ -2437,10 +2461,32 @@ def retr_dictpoplstarcomp( \
                                         5.51 * dictpopl[strglimb][namepopllimbtotl]['masscomp'][0][dictindx[strglimb][strgbody][k]] / \
                                                                                            dictpopl[strglimb][namepopllimbtotl]['radicomp'][0][dictindx[strglimb][strgbody][k]]**3
                 
+                # total radius
+                dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0][k] = dictpopl[strgbody][namepoplstartotl]['radistar'][0][k]
+                if not boolsystcosc:
+                    dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0][k] += dictpopl[strglimb][namepopllimbtotl]['radicomp'][0][k] / dictfact['rsre']
+                
+                print('k')
+                print(k)
+                print('dictpopl[strgbody][namepoplstartotl][radistar][0][k]')
+                print(dictpopl[strgbody][namepoplstartotl]['radistar'][0][k])
+                print('dictpopl[strglimb][namepopllimbtotl][rsumcomp][0][k]')
+                print(dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0][k])
+                print('dictpopl[strglimb][namepopllimbtotl][radicomp][0][k] / dictfact[rsre]')
+                print(dictpopl[strglimb][namepopllimbtotl]['radicomp'][0][k] / dictfact['rsre'])
+
+                if booldiag:
+                    if dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0][k] <= dictpopl[strglimb][namepopllimbtotl]['radicomp'][0][k] / dictfact['rsre'] or \
+                       dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0][k] <= dictpopl[strglimb][namepopllimbtotl]['radistar'][0][k]:
+                        raise Exception('')
+                    
                 # total mass
                 if boolsystcosc or typesyst == 'StellarBinary':
                     dictpopl[strgbody][namepoplstartotl]['masssyst'][k] += np.sum(dictpopl[strglimb][namepopllimbtotl]['masscomp'][0][dictindx[strglimb][strgbody][k]])
                 
+                print('typesamporbtcomp')
+                print(typesamporbtcomp)
+
                 if typesamporbtcomp == 'peri':
                 
                     ratiperi = tdpy.util.icdf_powr(np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k] - 1), 1.2, 1.3, 5.)
@@ -2484,8 +2530,8 @@ def retr_dictpoplstarcomp( \
                     #    densstar = 1.
                     #dictpopl[strglimb][namepopllimbtotl]['radiroch'][k] = retr_radiroch(radistar, densstar, denscomp)
                     #minmsmax = 2. * dictpopl[strglimb][namepopllimbtotl]['radiroch'][k]
-
-                    dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0][dictindx[strglimb][strgbody][k]] = dictpopl[strgbody][namepoplstartotl]['radistar'][0][k] * \
+                    
+                    dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0][dictindx[strglimb][strgbody][k]] = dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0][k] * \
                                                                                  tdpy.util.icdf_powr(np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]), \
                                                                                                     minmsmaxradistar, maxmsmaxradistar, 2.) / dictfact['aurs']
                     
@@ -2529,16 +2575,32 @@ def retr_dictpoplstarcomp( \
                                                    np.round((dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][k] - timeepoc) / dictpopl[strglimb][namepopllimbtotl]['pericomp'][k])
     
         if strglimb == 'comp':
-
             if typesyst == 'PlanetarySystemWithMoons':
                 # initialize the total mass of the companion + moons system as the mass of the companion
                 dictpopl[strglimb][namepopllimbtotl]['masscompmoon'] = np.copy(dictpopl[strglimb][namepopllimbtotl]['masscomp'])
                         
-            rsum = dictpopl[strglimb][namepopllimbtotl]['radistar'][0]
-            if not boolsystcosc:
-                rsum += dictpopl[strglimb][namepopllimbtotl]['radicomp'][0] / dictfact['rsre']    
-            dictpopl[strglimb][namepopllimbtotl]['rsmacomp'][0] = rsum / dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0] / dictfact['aurs']
+            dictpopl[strglimb][namepopllimbtotl]['rsmacomp'][0] = dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0] \
+                                                                            / (dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0] * dictfact['aurs'])
             
+            if booldiag:
+                if (dictpopl[strglimb][namepopllimbtotl]['rsmacomp'][0] >= 1.).any():
+                    print('')
+                    print('')
+                    print('')
+                    print('dictpopl[strglimb][namepopllimbtotl][rsmacomp][0]')
+                    summgene(dictpopl[strglimb][namepopllimbtotl]['rsmacomp'][0])
+                    print('dictpopl[strglimb][namepopllimbtotl][rsumcomp][0]')
+                    summgene(dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0])
+                    print(dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0])
+                    print('dictpopl[strglimb][namepopllimbtotl][radistar][0]')
+                    summgene(dictpopl[strglimb][namepopllimbtotl]['radistar'][0])
+                    print('dictpopl[strglimb][namepopllimbtotl][radicomp][0] / dictfact[rsre]')
+                    summgene(dictpopl[strglimb][namepopllimbtotl]['radicomp'][0] / dictfact['rsre'])
+                    print('dictpopl[strglimb][namepopllimbtotl][smaxcomp][0] * dictfact[aurs]')
+                    summgene(dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0] * dictfact['aurs'])
+                    print(dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0] * dictfact['aurs'])
+                    raise Exception('rsum is more than the semi-major axis!')
+
             if booltrancomp is True and maxmcosicomp is not None:
                 raise Exception('maxmcosicomp cannot be specified if booltrancomp is True.')
 
@@ -2546,23 +2608,6 @@ def retr_dictpoplstarcomp( \
                 
                 if dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k] == 0:
                     continue
-                
-                print('booltrancomp')
-                print(booltrancomp)
-                print('booltrancomp')
-                print(booltrancomp)
-                print('booltrancomp')
-                print(booltrancomp)
-                print('booltrancomp')
-                print(booltrancomp)
-                print('booltrancomp')
-                print(booltrancomp)
-                print('booltrancomp')
-                print(booltrancomp)
-                print('booltrancomp')
-                print(booltrancomp)
-                print('booltrancomp')
-                print(booltrancomp)
                 
                 if booltrancomp:
                     maxmcosicomptemp = dictpopl[strglimb][namepopllimbtotl]['rsmacomp'][0][k]
