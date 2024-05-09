@@ -140,9 +140,9 @@ def retr_dictpopltic8( \
     Keyword arguments   
         typepopl: type of the population
             'TIC_prmshcon': TIC targets with contamination larger than
-            'TIC_im060': TIC targets brighter than TESS magnitude 6.0
-            'TIC_im100': TIC targets brighter than TESS magnitude 10.0
-            'TIC_im140': TIC targets brighter than TESS magnitude 14.0
+            'TIC_m060': TIC targets brighter than TESS magnitude 6.0
+            'TIC_m100': TIC targets brighter than TESS magnitude 10.0
+            'TIC_m140': TIC targets brighter than TESS magnitude 14.0
             'targtess_prms_ffimm060': TESS targets observed during PM on FFIs brighter than mag 6.0
             'targtess_prms_2min': 2-minute TESS targets obtained by merging the SPOC 2-min bulk downloads
 
@@ -369,7 +369,7 @@ def retr_dictpopltic8( \
         dictquer = pd.read_csv(path, nrows=numbsyst).to_dict(orient='list')
         
         for name in dictquer.keys():
-            dictquer[name] = np.array(dictquer[name])
+            dictquer[name][0] = np.array(dictquer[name][0])
 
     #if gdat.typedata == 'simuinje':
     #    indx = np.where((~np.isfinite(gdat.dictfeat['true']['ssys']['massstar'])) | (~np.isfinite(gdat.dictfeat['true']['ssys']['radistar'])))[0]
@@ -381,13 +381,13 @@ def retr_dictpopltic8( \
     if booldiag:
         for namefeat in dictquer:
             if len(dictquer[namefeat]) != 2 or len(dictquer[namefeat][1]) > 0 and not isinstance(dictquer[namefeat][1][1], str):
+                print('')
+                print('')
+                print('')
                 print('namefeat')
                 print(namefeat)
                 print('dictquer[namefeat]')
                 print(dictquer[namefeat])
-                print('')
-                print('')
-                print('')
                 raise Exception('dictquer is not properly defined.')
 
     return dictquer
