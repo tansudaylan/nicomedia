@@ -113,9 +113,9 @@ def retr_toiitici(tici, typeverb=1, dicttoii=None):
         dicttoii = retr_dicttoii()
     
     toii = None
-    indx = np.where(dicttoii['TICID'] == tici)[0]
+    indx = np.where(dicttoii['TICID'][0] == tici)[0]
     if indx.size > 0:
-        toii = int(str(dicttoii['TOIID'][indx[0]]).split('.')[0])
+        toii = int(str(dicttoii['TOIID'][0][indx[0]]).split('.')[0])
         if typeverb > 0:
             print('Matched the input TIC ID with TOI-%d.' % toii)
     
@@ -248,8 +248,6 @@ def retr_dictpopltic8( \
                     listticitsec = np.array(listticitsec)
                 else:
                     urlo = 'https://tess.mit.edu/wp-content/uploads/all_targets%sS%03d_v1.csv' % (strgurll, listtsec[o])
-                    print('urlo')
-                    print(urlo)
                     c = pd.read_csv(urlo, header=5)
                     listticitsec = c['TICID'].values
                     listticitsec = listticitsec.astype(str)
@@ -287,7 +285,7 @@ def retr_dictpopltic8( \
                 print('')
                 dictquer[dictnamefeatmast[name]] = np.concatenate(dictquerinte[dictnamefeatmast[name]])
             
-            u, indxuniq, cnts = np.unique(dictquer['TICID'], return_index=True, return_counts=True)
+            u, indxuniq, cnts = np.unique(dictquer['TICID'][0], return_index=True, return_counts=True)
             for name in dictnamefeatmast.keys():
                 dictquer[dictnamefeatmast[name]] = dictquer[dictnamefeatmast[name]][indxuniq]
             dictquer['numbtsec'] = cnts
@@ -1021,7 +1019,7 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
             numbticicpla = len(listticicpla)
             indxticicpla = np.arange(numbticicpla)
             for k in indxticicpla:
-                indxexartici = np.where((dictexar['TICID'] == int(listticicpla[k])) & \
+                indxexartici = np.where((dictexar['TICID'][0] == int(listticicpla[k])) & \
                                                     (dictexar['facidisc'] == 'Transiting Exoplanet Survey Satellite (TESS)'))[0]
                 indxexoftici = np.where(dicttoii['TICID'][0] == int(listticicpla[k]))[0]
                 for strg in dictexar.keys():
@@ -1929,7 +1927,7 @@ def retr_noisphot(magtinpt, strginst, typeoutp='intplite', booldiag=True):
         nois[indx] = 0.5 # [ppt over 1 hour]
         
         indx = np.where((magtinpt >= 20.) & (magtinpt < 24.))
-        nois[indx] = 0.5 * 10**((magtinpt[indx] - 20.) / 3.) # [ppt over 1 hour]
+        nois[indx] = 0.5 * 10**((0.4 * magtinpt[indx] - 20.) / 3.) # [ppt over 1 hour]
     
         indx = np.where(magtinpt >= 24.)
         nois[indx] = 1000. # [ppt]
@@ -1946,11 +1944,11 @@ def retr_noisphot(magtinpt, strginst, typeoutp='intplite', booldiag=True):
         else:
             raise Exception('')
     elif strginst == 'TESS-GEO-UV':
-        nois = 0.5 * 1e3 * 0.2 * 10**(-22. + magtinpt) # [ppt over one hour]
+        nois = 0.5 * 1e3 * 0.2 * 10**(-22.0 + 0.4 * magtinpt) # [ppt over one hour]
     elif strginst == 'TESS-GEO-VIS':
-        nois = 0.5 * 1e3 * 0.2 * 10**(-25. + magtinpt) # [ppt over one hour]
+        nois = 0.5 * 1e3 * 0.2 * 10**(-25.0 + 0.4 * magtinpt) # [ppt over one hour]
     elif strginst == 'ULTRASAT':
-        nois = 0.5 * 1e3 * 0.2 * 10**(-22.4 + magtinpt) # [ppt over one hour]
+        nois = 0.5 * 1e3 * 0.2 * 10**(-22.4 + 0.4 * magtinpt) # [ppt over one hour]
     else:
         print('')
         print('')
@@ -2160,8 +2158,10 @@ def retr_dictpoplstarcomp( \
 
         if (dictstar['radistar'] == 0.).any():
             raise Exception('')
-
-        dictstar['densstar'] = 1.41 * dictstar['massstar'] / dictstar['radistar']**3
+        
+        densstar = 1.41 * dictstar['massstar'][0] / dictstar['radistar'][0]**3
+        tdpy.setp_dict(dictstar, 'densstar', densstar)
+        
         dictstar['idenstar'] = dictstar['TICID']
     
 
