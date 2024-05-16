@@ -1387,9 +1387,9 @@ def retr_pntszero(strginst):
     elif strginst == 'LSSTyband':
         pntszero = -15
     elif strginst == 'TESS-GEO-UV':
-        pntszero = -15
+        pntszero = -19
     elif strginst == 'TESS-GEO-VIS':
-        pntszero = -15
+        pntszero = -17
     else:
         print('')
         print('')
@@ -2036,8 +2036,9 @@ def retr_dictpoplstarcomp( \
                           
                           # type of sampling of orbital period and semi-major axes
                           ## 'smax': semi-major axes are sampled first and then orbital periods are calculated
-                          ## 'peri': orbital periods are sampled first and then semi-major axies are calculated
-                          typesamporbtcomp='smax', \
+                          ## 'peristab': orbital periods are sampled first, respecting stability, and then semi-major axies are calculated
+                          ## 'peripowr': orbital periods are sampled from a power law regardless of stability and then semi-major axies are calculated
+                          typesamporbtcomp='peristab', \
 
                           # minimum number of components per star
                           minmnumbcompstar=1, \
@@ -2054,13 +2055,14 @@ def retr_dictpoplstarcomp( \
                           # minimum mass of the companions
                           minmmasscomp=None, \
                           
-                          # minimum orbital period, only taken into account when typesamporbtcomp == 'peri'
-                          minmpericomp=0.5, \
-                          #minmpericomp=0.1, \
+                          # maximum mass of the companions
+                          maxmmasscomp=None, \
                           
-                          # maximum orbital period, only taken into account when typesamporbtcomp == 'peri'
-                          maxmpericomp=0.5, \
-                          #maxmpericomp=1000., \
+                          # minimum orbital period, only taken into account when typesamporbtcomp == 'peripowr' or 'peristab'
+                          minmpericomp=0.5, \
+                          
+                          # maximum orbital period, only taken into account when typesamporbtcomp == 'peripowr'
+                          maxmpericomp=1000., \
                           
                           # Boolean flag to force all companions to be transiting
                           booltrancomp=False, \
@@ -2265,20 +2267,21 @@ def retr_dictpoplstarcomp( \
                 minmmasscomp = 0.5 # [Earth mass]
     
         # maximum companion mass
-        if boolsystcosc:
-            maxmmasscomp = 200. # [Solar mass]
-        elif boolsystpsys:
-            # Deuterium burning mass
-            maxmmasscomp = 4400. # [Earth mass]
-        elif typesyst == 'StellarBinary':
-            maxmmasscomp = np.inf # [Earth mass]
-        else:
-            print('')
-            print('')
-            print('')
-            print('typesyst')
-            print(typesyst)
-            raise Exception('Could not define maxmmasscomp')
+        if maxmmasscomp is None:
+            if boolsystcosc:
+                maxmmasscomp = 200. # [Solar mass]
+            elif boolsystpsys:
+                # Deuterium burning mass
+                maxmmasscomp = 4400. # [Earth mass]
+            elif typesyst == 'StellarBinary':
+                maxmmasscomp = np.inf # [Earth mass]
+            else:
+                print('')
+                print('')
+                print('')
+                print('typesyst')
+                print(typesyst)
+                raise Exception('Could not define maxmmasscomp')
     
     if boolhavecomp or boolflar:
         
@@ -2492,40 +2495,58 @@ def retr_dictpoplstarcomp( \
                 print('typesamporbtcomp')
                 print(typesamporbtcomp)
 
-                if typesamporbtcomp == 'peri':
-                
-                    ratiperi = tdpy.util.icdf_powr(np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k] - 1), 1.2, 1.3, 5.)
+                if typesamporbtcomp == 'peristab' or typesamporbtcomp == 'peripowr':
                     
-                    listpericomp = []
-                    for mm in range(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k]):
-                        if mm == 0:
-                            peri = minmpericomp
-                        else:
-                            peri = ratiperi[mm-1] * listpericomp[mm-1]
-                        listpericomp.append(peri)
-                    dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]] = np.array(listpericomp)
+                    if typesamporbtcomp == 'peristab':
+                        print('np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k])')
+                        print(np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]))
+                        print('')
+                        print('')
+                        print('')
+                        ratiperi = tdpy.util.icdf_powr(np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k] - 1), 1.2, 1.3, 5.)
+                        
+                        print('ratiperi')
+                        summgene(ratiperi)
 
-                    if booldiag:
-                        ratiperi = dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]][1:] / \
-                                                    dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]][:-1]
-                        indx = np.where(ratiperi < 1.2)[0]
-                        if indx.size > 0:
-                            print('indx')
-                            summgene(indx)
-                            print('dictpopl[comp][namepopllimbtotl][pericomp][dictindx[strglimb][strgbody][k]]')
-                            print(dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]])
-                            print('dictpopl[star][namepoplstartotl][numbcompstar][k]')
-                            print(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k])
-                            raise Exception('')
+                        listpericomp = []
+                        for mm in range(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]):
+                            if mm == 0:
+                                peri = minmpericomp
+                            else:
+                                peri = ratiperi[mm-1] * listpericomp[mm-1]
+                            listpericomp.append(peri)
+                        dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]] = np.array(listpericomp)
+
+                        if booldiag:
+                            ratiperi = dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]][1:] / \
+                                                        dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]][:-1]
+                            indx = np.where(ratiperi < 1.2)[0]
+                            if indx.size > 0:
+                                print('indx')
+                                summgene(indx)
+                                print('dictpopl[comp][namepopllimbtotl][pericomp][dictindx[strglimb][strgbody][k]]')
+                                print(dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]])
+                                print('dictpopl[star][namepoplstartotl][numbcompstar][k]')
+                                print(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k])
+                                raise Exception('')
+                    if typesamporbtcomp == 'peripowr':
+                        dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]] = \
+                                        tdpy.util.icdf_powr(np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]), minmpericomp, maxmpericomp, 2.)
                     
+                    # determine the corresponding semi-major axes
                     if typesyst == 'PlanetarySystemWithNonKeplerianObjects':
                         raise Exception('')
                     else:
                         factnonk = 1.
-
+                    
+                    print('dictpopl[strglimb][namepopllimbtotl][smaxcomp][0][dictindx[strglimb][strgbody][k]]')
+                    summgene(dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0][dictindx[strglimb][strgbody][k]])
+                    print('dictpopl[strglimb][namepopllimbtotl][pericomp][0][dictindx[strglimb][strgbody][k]]')
+                    summgene(dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]])
+                    
                     dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0][dictindx[strglimb][strgbody][k]] = \
                                             retr_smaxkepl(dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]], \
-                                                                                                                dictpopl[strgbody][namepoplstartotl]['masssyst'][k], factnonk=factnonk)
+                                                                                                     dictpopl[strgbody][namepoplstartotl]['masssyst'][0][k], factnonk=factnonk)
                 
                 else:
                     # semi-major axes
@@ -2541,7 +2562,7 @@ def retr_dictpoplstarcomp( \
                                                                                                     minmsmaxradistar, maxmsmaxradistar, 2.) / dictfact['aurs']
                     
                     if typesyst == 'PlanetarySystemWithNonKeplerianObjects':
-                        factnonk = tdpy.util.icdf_powr(np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k]), 0.1, 1., -2.)
+                        factnonk = tdpy.util.icdf_powr(np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]), 0.1, 1., -2.)
                         dictpopl[strglimb][namepopllimbtotl]['factnonkcomp'][0][dictindx[strglimb][strgbody][k]] = factnonk
                     else:
                         factnonk = 1.
@@ -2570,7 +2591,7 @@ def retr_dictpoplstarcomp( \
                 # conjunction epochs
                 if epocmtracomp is not None:
                     dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][0][dictindx[strglimb][strgbody][k]] = \
-                                                            np.full(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k], epocmtracomp)
+                                                            np.full(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k], epocmtracomp)
                 else:
                     dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][0][dictindx[strglimb][strgbody][k]] = \
                                         1e8 * np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k])
@@ -2725,10 +2746,10 @@ def retr_dictpoplstarcomp( \
             
                 for k in tqdm(range(numbstar)):
                     
-                    if dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k] == 0:
+                    if dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k] == 0:
                         continue
                     
-                    numbcomp = dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k]
+                    numbcomp = dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]
                     
                     # number of exomoons to the companion
                     numbmoon = dictpopl[strglimb][namepopllimbtotl]['numbmooncomp'][0][dictindx[strglimb][strgbody][k]].astype(int)
