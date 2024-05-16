@@ -1028,7 +1028,7 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
                     dicttoii[strg][0] = np.concatenate((dicttoii[strg][0], dictexar[strg][indxexartici]))
 
         # derived quantities
-        ## photometric noise in the TESS passband
+        ## photometric noise in the TESS passband over one hour
         tdpy.setp_dict(dicttoii, 'noistess', retr_noisphot(dicttoii['magtsystTESS'][0], 'TESS'))
         
         ## atmospheric characterization
@@ -1387,9 +1387,9 @@ def retr_pntszero(strginst):
     elif strginst == 'LSSTyband':
         pntszero = -15
     elif strginst == 'TESS-GEO-UV':
-        pntszero = 20.4
+        pntszero = -15
     elif strginst == 'TESS-GEO-VIS':
-        pntszero = 20.4
+        pntszero = -15
     else:
         print('')
         print('')
@@ -1403,7 +1403,9 @@ def retr_pntszero(strginst):
 
 def retr_magtfromflux(flux, strginst):
     
+    # this needs to be zero if flux is properly calibrated
     pntszero = retr_pntszero(strginst)
+    #pntszero = 0
 
     magt = -2.5 * np.log10(flux) + pntszero
     
@@ -1416,12 +1418,14 @@ def retr_magtfromflux(flux, strginst):
 
 def retr_fluxfrommagt(dmag, strginst, stdvmagt=None):
     
+    # this needs to be zero if flux is properly calibrated
     pntszero = retr_pntszero(strginst)
+    #pntszero = 0.
     
-    flux = 10**(-(magt - pntszero) / 2.5)
+    flux = 10**(-0.4 * (magt - pntszero))
 
     if stdvmagt is not None:
-        stdvrflx = np.log(10.) / 2.5 * rflx * stdvdmag
+        stdvrflx = np.log(10.) * 0.4 * rflx * stdvdmag
         return flux, stdvflux
     else:
         return flux
@@ -1944,11 +1948,12 @@ def retr_noisphot(magtinpt, strginst, typeoutp='intplite', booldiag=True):
         else:
             raise Exception('')
     elif strginst == 'TESS-GEO-UV':
-        nois = 0.5 * 1e3 * 0.2 * 10**(-22.0 + 0.4 * magtinpt) # [ppt over one hour]
+        # 200 ppt (limiting magnitude)
+        nois = 200 * 10**(0.4 * (magtinpt - 22.5)) # [ppt over one hour]
     elif strginst == 'TESS-GEO-VIS':
-        nois = 0.5 * 1e3 * 0.2 * 10**(-25.0 + 0.4 * magtinpt) # [ppt over one hour]
+        nois = 200 * 10**(0.4 * (magtinpt - 25.0)) # [ppt over one hour]
     elif strginst == 'ULTRASAT':
-        nois = 0.5 * 1e3 * 0.2 * 10**(-22.4 + 0.4 * magtinpt) # [ppt over one hour]
+        nois = 200 * 10**(0.4 * (magtinpt - 22.4)) # [ppt over one hour]
     else:
         print('')
         print('')
