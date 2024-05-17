@@ -1908,6 +1908,16 @@ def retr_logg(radi, mass):
     return logg
 
 
+def retr_albg(amplplanrefl, radicomp, smax):
+    '''
+    Return geometric albedo.
+    '''
+    
+    albg = amplplanrefl / (radicomp / smax)**2
+    
+    return albg
+
+
 def retr_noisphot(magtinpt, strginst, typeoutp='intplite', booldiag=True):
     '''
     TESS photometric precision (over what time scale?)
