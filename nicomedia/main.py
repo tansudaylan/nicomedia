@@ -101,7 +101,7 @@ def retr_aang(xpos, ypos):
     return aang
 
 
-def retr_psfn(arryangl, dictpara, indxenertemp, typemodlpsfn, typenormangl='none', booldiag=True):
+def retr_psfn(dictpara, indxenertemp, arryangl, typemodlpsfn, typenormangl='none', booldiag=True):
     '''
     Compute the PSF profile
     '''
