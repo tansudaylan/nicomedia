@@ -12,29 +12,211 @@ from tdpy import summgene
 import chalcedon
 
 
-def retr_radieins_inft( \
-                       # velocity dispersion [km/s]
-                       dispvelo, \
+def retr_psfnwdth( \
+                  psfn, \
+                  arryangl, \
+                  # fraction of maximum
+                  frac=0.5, \
+                 ):
+    '''
+    Return the PSF width
+    '''
+    
+    numbener = psfn.shape[0]
+    numbdqlt = psfn.shape[2]
 
-                      ):
+    indxener = np.arange(numbener)
+    indxdqlt = np.arange(numbdqlt)
+
+    wdth = np.zeros((numbener, numbdqlt))
+    for i in indxener:
+        for m in indxdqlt:
+            psfntemp = psfn[i, :, m]
+            indxanglgood = np.argsort(psfntemp)
+            intpwdth = max(frac * np.amax(psfntemp), np.amin(psfntemp))
+            if intpwdth >= np.amin(psfntemp[indxanglgood]) and intpwdth <= np.amax(psfntemp[indxanglgood]):
+                wdthtemp = scipy.interpolate.interp1d(psfntemp[indxanglgood], arryangl[indxanglgood], fill_value='extrapolate')(intpwdth)
+            else:
+                wdthtemp = 0.
+            wdth[i, m] = wdthtemp
+                        
+    return wdth
+
+
+def retr_singgaus(scaldevi, sigc):
+    
+    psfn = 1. / 2. / np.pi / sigc**2 * np.exp(-0.5 * scaldevi**2 / sigc**2)
+
+    return psfn
+
+
+def retr_singking(scaldevi, sigc, gamc):
+    
+    psfn = 1. / 2. / np.pi / sigc**2 * (1. - 1. / gamc) * (1. + scaldevi**2 / 2. / gamc / sigc**2)**(-gamc)
+
+    return psfn
+
+
+def retr_doubgaus(scaldevi, frac, sigc, sigt):
+    
+    psfn = frac / 2. / np.pi / sigc**2 * np.exp(-0.5 * scaldevi**2 / sigc**2) + (1. - frac) / 2. / np.pi / sigc**2 * np.exp(-0.5 * scaldevi**2 / sigc**2)
+
+    return psfn
+
+
+def retr_gausking(scaldevi, frac, sigc, sigt, gamt):
+
+    psfn = frac / 2. / np.pi / sigc**2 * np.exp(-0.5 * scaldevi**2 / sigc**2) + (1. - frac) / 2. / np.pi / sigt**2 * (1. - 1. / gamt) * (1. + scaldevi**2 / 2. / gamt / sigt**2)**(-gamt)
+    
+    return psfn
+
+
+def retr_doubking(scaldevi, frac, sigc, gamc, sigt, gamt):
+
+    psfn = frac / 2. / np.pi / sigc**2 * (1. - 1. / gamc) * (1. + scaldevi**2 / 2. / gamc / sigc**2)**(-gamc) + \
+    (1. - frac) / 2. / np.pi / sigt**2 * (1. - 1. / gamt) * (1. + scaldevi**2 / 2. / gamt / sigt**2)**(-gamt)
+    
+    return psfn
+
+
+def retr_xposypos(gang, aang):
+    
+    xpos = gang * np.cos(aang)
+    ypos = gang * np.sin(aang)
+
+    return xpos, ypos
+
+
+def retr_gang(xpos, ypos):
+    
+    gang = np.arccos(np.cos(xpos) * np.cos(ypos))
+
+    return gang
+
+
+def retr_aang(xpos, ypos):
+
+    aang = np.arctan2(ypos, xpos)
+
+    return aang
+
+
+def retr_psfn(arryangl, dictpara, indxenertemp, typemodlpsfn, typenormangl='none', booldiag=True):
     '''
-    Calculate the Einstein radius for a source position at infinity
+    Compute the PSF profile
     '''
-    """
-            :param deflector_dict: deflector properties
-            :param v_sigma: velocity dispersion in km/s
-            :return: Einstein radius in arc-seconds
-            """
-    if v_sigma is None:
-        if deflector_dict is None:
-            raise ValueError("Either deflector_dict or v_sigma must be provided")
+    
+    if typenormangl == 'ferm':
+        scalangl = 2. * np.arcsin(np.sqrt(2. - 2. * np.cos(arryangl)) / 2.)[None, :, None] / fermscalfact[:, None, :]
+        scalanglnorm = 2. * np.arcsin(np.sqrt(2. - 2. * np.cos(arryangl)) / 2.)[None, :, None] / fermscalfact[:, None, :]
+    else:
+        scalangl = arryangl[None, :, None]
+    
+    if booldiag:
+        if dictpara['sigc'] == 0:
+            raise Exception('')
+
+    if typemodlpsfn == 'singgaus':
+        psfn = retr_singgaus(scalangl, dictpara['sigc'])
+    
+    elif typemodlpsfn == 'singking':
+        sigc = psfp[indxpsfpinit]
+        gamc = psfp[indxpsfpinit+1]
+        sigc = sigc[:, None, :]
+        gamc = gamc[:, None, :]
+        psfn = retr_singking(scalangl, sigc, gamc)
+    
+    elif typemodlpsfn == 'doubking':
+        sigc = psfp[indxpsfpinit]
+        gamc = psfp[indxpsfpinit+1]
+        sigt = psfp[indxpsfpinit+2]
+        gamt = psfp[indxpsfpinit+3]
+        frac = psfp[indxpsfpinit+4]
+        sigc = sigc[:, None, :]
+        gamc = gamc[:, None, :]
+        sigt = sigt[:, None, :]
+        gamt = gamt[:, None, :]
+        frac = frac[:, None, :]
+        psfn = retr_doubking(scalangl, frac, sigc, gamc, sigt, gamt)
+        if typenormangl == 'ferm':
+            psfnnorm = retr_doubking(scalanglnorm, frac, sigc, gamc, sigt, gamt)
+    else:
+        raise Exception('')
+
+    # normalize the PSF
+    if typenormangl == 'ferm':
+        fact = 2. * np.pi * np.trapz(psfnnorm * np.sin(arryangl[None, :, None]), arryangl, axis=1)[:, None, :]
+        psfn /= fact
+
+    return psfn
+
+
+# photometry related
+
+### find the spectra of sources
+def retr_spec(gdat, flux, sind=None, curv=None, expc=None, sindcolr=None, elin=None, edisintp=None, sigm=None, gamm=None, spectype='powr', plot=False):
+    
+    if gdat.numbener == 1:
+        spec = flux[None, :]
+    else:
+        if plot:
+            meanener = gdat.bctrpara.enerplot
         else:
-            v_sigma = deflector_dict['vel_disp']
+            meanener = gdat.bctrpara.ener
 
-    theta_E_infinity = 4 * np.pi * (dispvelo / 3e5)**2 * (180. / np.pi * 3600.)
-    return theta_E_infinity
+        if gmod.spectype == 'gaus':
+            spec = 1. / edis[None, :] / np.sqrt(2. * pi) * flux[None, :] * np.exp(-0.5 * ((gdat.bctrpara.ener[:, None] - elin[None, :]) / edis[None, :])**2)
+        if gmod.spectype == 'voig':
+            args = (gdat.bctrpara.ener[:, None] + 1j * gamm[None, :]) / np.sqrt(2.) / sigm[None, :]
+            spec = 1. / sigm[None, :] / np.sqrt(2. * pi) * flux[None, :] * real(scipy.special.wofz(args))
+        if gmod.spectype == 'edis':
+            edis = edisintp(elin)[None, :]
+            spec = 1. / edis / np.sqrt(2. * pi) * flux[None, :] * np.exp(-0.5 * ((gdat.bctrpara.ener[:, None] - elin[None, :]) / edis)**2)
+        if gmod.spectype == 'pvoi':
+            spec = 1. / edis / np.sqrt(2. * pi) * flux[None, :] * np.exp(-0.5 * ((gdat.bctrpara.ener[:, None] - elin[None, :]) / edis)**2)
+        if gmod.spectype == 'lore':
+            spec = 1. / edis / np.sqrt(2. * pi) * flux[None, :] * np.exp(-0.5 * ((gdat.bctrpara.ener[:, None] - elin[None, :]) / edis)**2)
+        if gmod.spectype == 'powr':
+            spec = flux[None, :] * (meanener / gdat.enerpivt)[:, None]**(-sind[None, :])
+        if gmod.spectype == 'colr':
+            if plot:
+                spec = np.zeros((gdat.numbenerplot, flux.size))
+            else:
+                spec = np.empty((gdat.numbener, flux.size))
+                for i in gdat.indxener:
+                    if i < gdat.indxenerpivt:
+                        spec[i, :] = flux * (gdat.bctrpara.ener[i] / gdat.enerpivt)**(-sindcolr[i])
+                    elif i == gdat.indxenerpivt:
+                        spec[i, :] =  flux
+                    else:
+                        spec[i, :] = flux * (gdat.bctrpara.ener[i] / gdat.enerpivt)**(-sindcolr[i-1])
+        if gmod.spectype == 'curv':
+            spec = flux[None, :] * meanener[:, None]**(-sind[None, :] - gdat.factlogtenerpivt[:, None] * curv[None, :])
+        if gmod.spectype == 'expc':
+            spec = flux[None, :] * (meanener / gdat.enerpivt)[:, None]**(-sind[None, :]) * np.exp(-(meanener - gdat.enerpivt)[:, None] / expc[None, :])
+    
+    return spec
 
 
+### find the surface brightness due to one point source
+def retr_sbrtpnts(gdat, xpos, ypos, spec, psfnintp, indxpixlelem):
+    
+    # calculate the distance to all pixels from each point source
+    dist = retr_angldistunit(gdat, xpos, ypos, indxpixlelem)
+    
+    # interpolate the PSF onto the pixels
+    if gdat.kernevaltype == 'ulip':
+        psfntemp = psfnintp(dist)
+    if gdat.kernevaltype == 'bspx':
+        pass
+
+    # scale by the PS spectrum
+    sbrtpnts = spec[:, None, None] * psfntemp
+    
+    return sbrtpnts
+
+
+# databases
 def quer_mast(request):
     '''
     Query the MAST catalog
