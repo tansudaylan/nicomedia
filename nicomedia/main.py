@@ -459,12 +459,6 @@ def retr_dictpopltic8( \
 
             print('Concatenating arrays from different sectors...')
             for name in dictnamefeatmast.keys():
-                print('dictquerinte[dictnamefeatmast[name]]')
-                print(dictquerinte[dictnamefeatmast[name]])
-                for temp in dictquerinte[dictnamefeatmast[name]]:
-                    print('temp')
-                    summgene(temp)
-                print('')
                 dictquer[dictnamefeatmast[name]] = np.concatenate(dictquerinte[dictnamefeatmast[name]])
             
             u, indxuniq, cnts = np.unique(dictquer['TICID'][0], return_index=True, return_counts=True)
@@ -511,19 +505,25 @@ def retr_dictpopltic8( \
             for name in listdictquer[0].keys():
                 if name == 'ID':
                     namedict = 'TICID'
+                    lablunit = ''
                 if name == 'Tmag':
                     namedict = 'magtsystTESS'
+                    lablunit = 'mag'
                 if name == 'ra':
                     namedict = 'rascstar'
+                    lablunit = 'degree'
                 if name == 'dec':
                     namedict = 'declstar'
+                    lablunit = 'degree'
                 if name == 'rad':
                     namedict = 'radistar'
+                    lablunit = '$R_{\odot}$'
                 if name == 'mass':
                     namedict = 'massstar'
+                    lablunit = '$M_{\odot}$'
                 dictquer[namedict] = np.empty(len(listdictquer))
                 for k in range(len(listdictquer)):
-                    dictquer[namedict][k] = listdictquer[k][name]
+                    dictquer[namedict][k] = [listdictquer[k][name], lablunit]
         else:
             raise Exception('Unrecognized population name: %s' % typepopl)
         
@@ -568,6 +568,8 @@ def retr_dictpopltic8( \
                 print(namefeat)
                 print('dictquer[namefeat]')
                 print(dictquer[namefeat])
+                print('typepopl')
+                print(typepopl)
                 raise Exception('dictquer is not properly defined.')
 
     return dictquer
