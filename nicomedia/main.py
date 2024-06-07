@@ -504,30 +504,30 @@ def retr_dictpopltic8( \
             dictquer = dict()
             for name in listdictquer[0].keys():
                 if name == 'ID':
-                    namedict = 'TICID'
+                    namefeat = 'TICID'
                     lablunit = ''
                 if name == 'Tmag':
-                    namedict = 'magtsystTESS'
+                    namefeat = 'magtsystTESS'
                     lablunit = 'mag'
                 if name == 'ra':
-                    namedict = 'rascstar'
+                    namefeat = 'rascstar'
                     lablunit = 'degree'
                 if name == 'dec':
-                    namedict = 'declstar'
+                    namefeat = 'declstar'
                     lablunit = 'degree'
                 if name == 'rad':
-                    namedict = 'radistar'
+                    namefeat = 'radistar'
                     lablunit = '$R_{\odot}$'
                 if name == 'mass':
-                    namedict = 'massstar'
+                    namefeat = 'massstar'
                     lablunit = '$M_{\odot}$'
-                dictquer[namedict] = np.empty(len(listdictquer))
+                dictquer[namefeat] = [np.empty(len(listdictquer)), lablunit]
                 for k in range(len(listdictquer)):
-                    dictquer[namedict][k] = [listdictquer[k][name], lablunit]
+                    dictquer[namefeat][0][k] = listdictquer[k][name]
         else:
             raise Exception('Unrecognized population name: %s' % typepopl)
         
-        numbtarg = dictquer['radistar'].size
+        numbtarg = dictquer['radistar'][0].size
             
         if typeverb > 0:
             print('%d targets...' % numbtarg)
@@ -566,6 +566,7 @@ def retr_dictpopltic8( \
                 print('')
                 print('namefeat')
                 print(namefeat)
+                
                 print('dictquer[namefeat]')
                 print(dictquer[namefeat])
                 print('typepopl')
