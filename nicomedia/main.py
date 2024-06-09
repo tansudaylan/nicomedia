@@ -459,12 +459,12 @@ def retr_dictpopltic8( \
 
             print('Concatenating arrays from different sectors...')
             for name in dictnamefeatmast.keys():
-                dictquer[dictnamefeatmast[name]] = np.concatenate(dictquerinte[dictnamefeatmast[name]])
+                dictquer[dictnamefeatmast[name]] = [np.concatenate(dictquerinte[dictnamefeatmast[name]]), '']
             
             u, indxuniq, cnts = np.unique(dictquer['TICID'][0], return_index=True, return_counts=True)
             for name in dictnamefeatmast.keys():
-                dictquer[dictnamefeatmast[name]] = dictquer[dictnamefeatmast[name]][indxuniq]
-            dictquer['numbtsec'] = cnts
+                dictquer[dictnamefeatmast[name]][0] = dictquer[dictnamefeatmast[name]][0][indxuniq]
+            dictquer['numbtsec'] = [cnts, '']
 
         elif typepopl.startswith('TIC'):
             if typepopl.endswith('hcon'):
@@ -954,12 +954,17 @@ def retr_dicthostplan(namepopl, \
 
 
 def retr_dicttoii(toiitarg=None, boolreplexar=False, \
+                  
+                  strgelem='comp', \
+                  
                   # type of verbosity
                   ## -1: absolutely no text
                   ##  0: no text output except critical warnings
                   ##  1: minimal description of the execution
                   ##  2: detailed description of the execution
-                  typeverb=1, strgelem='comp'):
+                  typeverb=1, \
+                  
+                  ):
     
     dictfact = tdpy.retr_factconv()
     
@@ -1116,9 +1121,9 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
         # predicted mass from radii
         path = pathephe + 'data/exofop_toi_mass_saved.csv'
         if not os.path.exists(path):
-            dicttemp = dict()
-            dicttemp[strgmasselem] = np.ones_like(dicttoii[strgradielem][0]) + np.nan
-            dicttemp[strgstdvmass] = np.ones_like(dicttoii[strgradielem][0]) + np.nan
+            dictelemmass = dict()
+            dictelemmass[strgmasselem] = np.ones_like(dicttoii[strgradielem][0]) + np.nan
+            dictelemmass[strgstdvmass] = np.ones_like(dicttoii[strgradielem][0]) + np.nan
             
             numbsamppopl = 10
             indx = np.where(np.isfinite(dicttoii[strgradielem][0]))[0]
@@ -1139,24 +1144,27 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
                 # estimate the mass from samples
                 listmassplan = retr_massfromradi(listradicomp)
                 
-                dicttemp[strgmasselem][k] = np.mean(listmassplan)
-                dicttemp[strgstdvmass][k] = np.std(listmassplan)
+                dictelemmass[strgmasselem][k] = np.mean(listmassplan)
+                dictelemmass[strgstdvmass][k] = np.std(listmassplan)
                 
             if typeverb > 0:
                 print('Writing to %s...' % path)
-            pd.DataFrame.from_dict(dicttemp).to_csv(path, index=False)
+            pd.DataFrame.from_dict(dictelemmass).to_csv(path, index=False)
         else:
             if typeverb > 0:
                 print('Reading from %s...' % path)
-            dicttemp = pd.read_csv(path).to_dict(orient='list')
+            dictelemmass = pd.read_csv(path).to_dict(orient='list')
             
-            for name in dicttemp:
-                dicttemp[name] = np.array(dicttemp[name])
+            for name in dictelemmass:
+                dictelemmass[name] = np.array(dictelemmass[name])
                 if toiitarg is not None:
-                    dicttemp[name] = dicttemp[name][indxcomp]
-        
-        tdpy.setp_dict(dicttoii, strgmasselem, dicttemp[strgmasselem])
-        tdpy.setp_dict(dicttoii, strgstdvmass, dicttemp[strgstdvmass])
+                    dictelemmass[name] = dictelemmass[name][indxcomp]
+            
+            if dicttoii['radistar'][0].size != dictelemmass[strgmasselem].size:
+                raise Exception('dictelemmass size is anomalous.')
+
+        tdpy.setp_dict(dicttoii, strgmasselem, dictelemmass[strgmasselem])
+        tdpy.setp_dict(dicttoii, strgstdvmass, dictelemmass[strgstdvmass])
         
         perielem = dicttoii[strgperielem][0]
         masselem = dicttoii[strgmasselem][0]
@@ -2350,15 +2358,15 @@ def retr_dictpoplstarcomp( \
         dictstar = retr_dictpopltic8(typepoplsyst, numbsyst=numbsyst)
         
         print('Removing stars that do not have radii or masses...')
-        indx = np.where(np.isfinite(dictstar['radistar']) & \
-                        np.isfinite(dictstar['massstar']))[0]
+        indx = np.where(np.isfinite(dictstar['radistar'][0]) & \
+                        np.isfinite(dictstar['massstar'][0]))[0]
         for name in dictstar.keys():
-            dictstar[name] = dictstar[name][indx]
+            dictstar[name][0] = dictstar[name][0][indx]
 
-        if (dictstar['rascstar'] > 1e4).any():
+        if (dictstar['rascstar'][0] > 1e4).any():
             raise Exception('')
 
-        if (dictstar['radistar'] == 0.).any():
+        if (dictstar['radistar'][0] == 0.).any():
             raise Exception('')
         
         densstar = 1.41 * dictstar['massstar'][0] / dictstar['radistar'][0]**3
