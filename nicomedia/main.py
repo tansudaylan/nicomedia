@@ -2397,6 +2397,9 @@ def retr_dictpoplstarcomp( \
             dictstar['densstar'] = [1.4e6 * np.ones(numbsyst), 'g cm$^{-3}$']
         else:
             raise Exception('')
+        
+        print('dictstar[radistar]')
+        summgene(dictstar['radistar'][0])
 
         dictstar['coeflmdklinr'] = [0.4 * np.ones(numbsyst), '']
         dictstar['coeflmdkquad'] = [0.25 * np.ones(numbsyst), '']
@@ -2411,7 +2414,7 @@ def retr_dictpoplstarcomp( \
             liststrgband = []
             if typepoplsyst == 'lsstwfds':
                 liststrgband += ['r']
-        
+
         gdatfluxband = None
         for strgband in liststrgband:
             dictstar['fluxbandsyst%s' % strgband] = [np.empty(numbsyst), 'W/m^2']
@@ -2549,7 +2552,7 @@ def retr_dictpoplstarcomp( \
 
         elif typesyst == 'CompactObjectStellarCompanion' or typesyst == 'StellarBinary':
             # number of companions per star
-            dictpopl[strgbody][namepoplstartotl][strgnumblimbbody] = np.ones(dictpopl[strgbody][namepoplstartotl]['radistar'].size).astype(int)
+            dictpopl[strgbody][namepoplstartotl][strgnumblimbbody] = [np.ones(dictpopl[strgbody][namepoplstartotl]['radistar'][0].size).astype(int), '']
             
         else:
             print('')
@@ -2693,7 +2696,7 @@ def retr_dictpoplstarcomp( \
                     
                 # total mass
                 if boolsystcosc or typesyst == 'StellarBinary':
-                    dictpopl[strgbody][namepoplstartotl]['masssyst'][k] += np.sum(dictpopl[strglimb][namepopllimbtotl]['masscomp'][0][dictindx[strglimb][strgbody][k]])
+                    dictpopl[strgbody][namepoplstartotl]['masssyst'][0][k] += np.sum(dictpopl[strglimb][namepopllimbtotl]['masscomp'][0][dictindx[strglimb][strgbody][k]])
                 
                 print('typesamporbtcomp')
                 print(typesamporbtcomp)
@@ -2784,7 +2787,7 @@ def retr_dictpoplstarcomp( \
                         print('dictpopl[comp][namepopllimbtotl][masscomp][dictindx[comp][star][k]]')
                         print(dictpopl[strglimb][namepopllimbtotl]['masscomp'][0][dictindx[strglimb][strgbody][k]])
                         print('dictpopl[comp][namepopllimbtotl][masssyst][dictindx[comp][star][k]]')
-                        print(dictpopl[strglimb][namepopllimbtotl]['masssyst'][dictindx[strglimb][strgbody][k]])
+                        print(dictpopl[strglimb][namepopllimbtotl]['masssyst'][0][dictindx[strglimb][strgbody][k]])
                         print('dictpopl[comp][namepopllimbtotl][smaxcomp][dictindx[comp][star][k]]')
                         print(dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0][dictindx[strglimb][strgbody][k]])
                         print('dictpopl[comp][namepopllimbtotl][pericomp][dictindx[comp][star][k]]')
@@ -2885,6 +2888,9 @@ def retr_dictpoplstarcomp( \
                     
             # Boolean flag indicating whether a companion is transiting
             dictpopl[strglimb][namepopllimbtotl]['booltran'] = [dictpopl[strglimb][namepopllimbtotl]['rsmacomp'][0] > dictpopl[strglimb][namepopllimbtotl]['cosicomp'][0], '']
+
+            # Boolean flag indicating whether any companion is transiting
+            dictpopl[strgbody][namepoplstartotl]['booltran'] = [dictpopl[strglimb][namepopllimbtotl]['booltran'][0].any(), '']
 
             # subpopulation where object transits
             indx = np.where(dictpopl[strglimb][namepopllimbtotl]['booltran'][0])[0]
@@ -3010,9 +3016,9 @@ def retr_dictpoplstarcomp( \
                                 print('typesamporbtcomp')
                                 print(typesamporbtcomp)
                                 print('dictpopl[comp][namepopllimbtotl][massstar][k]')
-                                print(dictpopl[strglimb][namepopllimbtotl]['massstar'][k])
+                                print(dictpopl[strglimb][namepopllimbtotl]['massstar'][0][k])
                                 print('dictpopl[comp][namepopllimbtotl][masssyst][k]')
-                                print(dictpopl[strglimb][namepopllimbtotl]['masssyst'][k])
+                                print(dictpopl[strglimb][namepopllimbtotl]['masssyst'][0][k])
                                 print('dictpopl[comp][namepopllimbtotl][pericomp][dictindx[strglimb][strgbody][k][j]]')
                                 print(dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k][j]])
                                 print('dictpopl[comp][namepopllimbtotl][smaxcomp][dictindx[strglimb][strgbody][k][j]]')
