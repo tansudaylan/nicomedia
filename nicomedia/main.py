@@ -2890,7 +2890,10 @@ def retr_dictpoplstarcomp( \
             dictpopl[strglimb][namepopllimbtotl]['booltran'] = [dictpopl[strglimb][namepopllimbtotl]['rsmacomp'][0] > dictpopl[strglimb][namepopllimbtotl]['cosicomp'][0], '']
 
             # Boolean flag indicating whether any companion is transiting
-            dictpopl[strgbody][namepoplstartotl]['booltran'] = [dictpopl[strglimb][namepopllimbtotl]['booltran'][0].any(), '']
+            booltran = np.empty(numbstar)
+            for k in tqdm(range(numbstar)):
+                booltran[k] = dictpopl[strglimb][namepopllimbtotl]['booltran'][0][dictindx[strglimb][strgbody][k]].any()
+            dictpopl[strgbody][namepoplstartotl]['booltran'] = [booltran, '']
 
             # subpopulation where object transits
             indx = np.where(dictpopl[strglimb][namepopllimbtotl]['booltran'][0])[0]
