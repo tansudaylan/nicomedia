@@ -2582,8 +2582,6 @@ def retr_dictpoplstarcomp( \
         dictindx[strglimb] = dict()
         dictindx[strglimb][strgbody] = [[] for k in indxsyst]
         cntr = 0
-        print('indxsyst')
-        print(indxsyst)
         for k in indxsyst:
             dictindx[strglimb][strgbody][k] = np.arange(cntr, cntr + dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]).astype(int)
             cntr += dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]
@@ -2594,11 +2592,7 @@ def retr_dictpoplstarcomp( \
             dictpopl[strglimb][namepopllimbtotl][name] = [np.empty(dictnumbsamp[strglimb][namepopllimbtotl]), '']
         
         print('Loading star features into component features...')
-        print('list(dictpopl[strgbody][namepoplstartotl].keys())')
-        print(list(dictpopl[strgbody][namepoplstartotl].keys()))
-
         dictnumbsamp[strglimb][namepopllimbtotl] = dictpopl[strglimb][namepopllimbtotl]['radistar'][0].size
-        
 
         listnamecatr = ['masssyst', 'radistar']
         if strglimb == 'comp':
@@ -2643,6 +2637,12 @@ def retr_dictpoplstarcomp( \
         for k in tqdm(range(numbstar)):
             
             if dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k] == 0:
+                print('Skipping')
+                print('Skipping')
+                print('Skipping')
+                print('Skipping')
+                print('Skipping')
+                print('Skipping')
                 continue
 
             # load star features into component features
@@ -2676,43 +2676,32 @@ def retr_dictpoplstarcomp( \
                                                                                            dictpopl[strglimb][namepopllimbtotl]['radicomp'][0][dictindx[strglimb][strgbody][k]]**3
                 
                 # total radius
-                dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0][k] = dictpopl[strgbody][namepoplstartotl]['radistar'][0][k]
+                dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0][dictindx[strglimb][strgbody][k]] = dictpopl[strgbody][namepoplstartotl]['radistar'][0][k]
                 if not boolsystcosc:
-                    dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0][k] += dictpopl[strglimb][namepopllimbtotl]['radicomp'][0][k] / dictfact['rsre']
+                    dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0][dictindx[strglimb][strgbody][k]] += \
+                                            dictpopl[strglimb][namepopllimbtotl]['radicomp'][0][dictindx[strglimb][strgbody][k]] / dictfact['rsre']
                 
-                print('k')
-                print(k)
-                print('dictpopl[strgbody][namepoplstartotl][radistar][0][k]')
-                print(dictpopl[strgbody][namepoplstartotl]['radistar'][0][k])
-                print('dictpopl[strglimb][namepopllimbtotl][rsumcomp][0][k]')
-                print(dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0][k])
-                print('dictpopl[strglimb][namepopllimbtotl][radicomp][0][k] / dictfact[rsre]')
-                print(dictpopl[strglimb][namepopllimbtotl]['radicomp'][0][k] / dictfact['rsre'])
-
                 if booldiag:
-                    if dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0][k] <= dictpopl[strglimb][namepopllimbtotl]['radicomp'][0][k] / dictfact['rsre'] or \
-                       dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0][k] <= dictpopl[strglimb][namepopllimbtotl]['radistar'][0][k]:
+                    if (dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0][dictindx[strglimb][strgbody][k]] < 1e-30).any():
+                        print('')
+                        print('')
+                        print('')
+                        raise Exception('')
+
+                    if (dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0][dictindx[strglimb][strgbody][k]] <= \
+                       dictpopl[strglimb][namepopllimbtotl]['radicomp'][0][dictindx[strglimb][strgbody][k]] / dictfact['rsre']).any() or \
+                       (dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0][dictindx[strglimb][strgbody][k]] <= \
+                       dictpopl[strglimb][namepopllimbtotl]['radistar'][0][k]).any():
                         raise Exception('')
                     
                 # total mass
                 if boolsystcosc or typesyst == 'StellarBinary':
                     dictpopl[strgbody][namepoplstartotl]['masssyst'][0][k] += np.sum(dictpopl[strglimb][namepopllimbtotl]['masscomp'][0][dictindx[strglimb][strgbody][k]])
                 
-                print('typesamporbtcomp')
-                print(typesamporbtcomp)
-
                 if typesamporbtcomp == 'peristab' or typesamporbtcomp == 'peripowr':
                     
                     if typesamporbtcomp == 'peristab':
-                        print('np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][k])')
-                        print(np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]))
-                        print('')
-                        print('')
-                        print('')
                         ratiperi = tdpy.util.icdf_powr(np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k] - 1), 1.2, 1.3, 5.)
-                        
-                        print('ratiperi')
-                        summgene(ratiperi)
 
                         listpericomp = []
                         for mm in range(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]):
@@ -2851,7 +2840,16 @@ def retr_dictpoplstarcomp( \
                 # cosine of orbital inclinations
                 dictpopl[strglimb][namepopllimbtotl]['cosicomp'][0][dictindx[strglimb][strgbody][k]] = maxmcosicomptemp * np.random.rand(numb)
                 
-        if strglimb == 'comp':
+            if booldiag:
+                if (dictpopl[strglimb][namepopllimbtotl]['rsmacomp'][0] == 0).any():
+                    print('dictpopl[strglimb][namepopllimbtotl][rsmacomp][0]')
+                    print(dictpopl[strglimb][namepopllimbtotl]['rsmacomp'][0])
+                    print('dictpopl[strglimb][namepopllimbtotl][rsumcomp][0]')
+                    print(dictpopl[strglimb][namepopllimbtotl]['rsumcomp'][0])
+                    print('')
+                    print('')
+                    print('')
+                    raise Exception('')
 
             # orbital inclinations of the companions
             dictpopl[strglimb][namepopllimbtotl]['inclcomp'] = [180. / np.pi * np.arccos(dictpopl[strglimb][namepopllimbtotl]['cosicomp'][0]), 'degree']
