@@ -2837,7 +2837,13 @@ def retr_dictpoplstarcomp( \
                 else:
                     maxmcosicomptemp = 1.
                 
+                numb = dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]
+
                 # cosine of orbital inclinations
+                #print('dictpopl[strglimb][namepopllimbtotl][osicomp][0][dictindx[strglimb][strgbody][k]]')
+                #print(dictpopl[strglimb][namepopllimbtotl]['cosicomp'][0][dictindx[strglimb][strgbody][k]])
+                #print('maxmcosicomptemp * np.random.rand(numb)')
+                #print(maxmcosicomptemp * np.random.rand(numb))
                 dictpopl[strglimb][namepopllimbtotl]['cosicomp'][0][dictindx[strglimb][strgbody][k]] = maxmcosicomptemp * np.random.rand(numb)
                 
             if booldiag:
