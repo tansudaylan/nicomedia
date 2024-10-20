@@ -2221,6 +2221,20 @@ def retr_subp(dictpopl, dictnumbsamp, dictindxsamp, namepoplinit, namepoplfinl, 
     dictindxsamp[namepoplfinl] = dict()
 
 
+def retr_dictsols():
+    
+    dictsols = dict()
+    dictsols['name'] = ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
+    dictsols['smax'] = [0.3870993, 0.723336, 1., 1.52371, 5.2029, 9.537, 19.189, 30.0699]
+    dictsols['mass'] = [0.05527, 0.81500, 1., 0.10745, 317.83, 95.159, 14.500, 17.204]
+    dictsols['radi'] = [2440, 6052, 6371., 3390, 69911, 58232, 25362, 24622]
+    for name in dictsols:
+        dictsols[name] = np.array(dictsols[name])
+    dictsols['radi'] = dictsols['radi'] / dictsols['radi'][2]
+    
+    return dictsols
+
+
 def retr_dictpoplstarcomp( \
                           # type of target systems
                           typesyst, \
@@ -2243,6 +2257,9 @@ def retr_dictpoplstarcomp( \
                           ## 'peripowr': orbital periods are sampled from a power law regardless of stability and then semi-major axies are calculated
                           typesamporbtcomp='peristab', \
 
+                          # distances to the systems
+                          distsyst=None, \
+                          
                           # minimum number of components per star
                           minmnumbcompstar=1, \
                           
@@ -2348,7 +2365,9 @@ def retr_dictpoplstarcomp( \
     
     # number of systems
     if numbsyst is None:
-        if typepoplsyst == 'SyntheticPopulation':
+        if distsyst is not None:
+            numbsyst = len(distsyst)
+        elif typepoplsyst == 'SyntheticPopulation':
             numbsyst = 10000
     
     indxsyst = np.arange(numbsyst)
@@ -2379,8 +2398,11 @@ def retr_dictpoplstarcomp( \
         
         dictstar = dict()
         
-        dictstar['distsyst'] = [tdpy.icdf_powr(np.random.rand(numbsyst), 100., 7000., -2.), 'pc']
-        
+        if distsyst is None:
+            dictstar['distsyst'] = [tdpy.icdf_powr(np.random.rand(numbsyst), 100., 7000., -2.), 'pc']
+        else:
+            dictstar['distsyst'] = [distsyst, 'pc']
+            
         if typestar == 'sunl':
             dictstar['radistar'] = [np.ones(numbsyst), '$R_{\odot}$']
             dictstar['massstar'] = [np.ones(numbsyst), '$M_{\odot}$']
@@ -2468,7 +2490,7 @@ def retr_dictpoplstarcomp( \
                     # ~ Mars mass
                     minmmasscomp = 0.1 # [Earth mass]
                 if typesyst == 'PlanetarySystemEmittingCompanion':
-                    minmmasscomp = 30. # [Earth mass]
+                    minmmasscomp = 3000. # [Earth mass]
             elif typesyst == 'StellarBinary':
                 minmmasscomp = 0.5 # [Earth mass]
     
@@ -2531,7 +2553,7 @@ def retr_dictpoplstarcomp( \
                 dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean] = [0.5 * dictpopl[strgbody][namepoplstartotl]['massstar'][0]**(-1.), '']
             
             # mean number per star
-            dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean] = [0.5 * dictpopl[strgbody][namepoplstartotl]['massstar'][0]**(-1.), '']
+            dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean] = [5. * dictpopl[strgbody][namepoplstartotl]['massstar'][0]**(-1.), '']
             
             # number per star
             dictpopl[strgbody][namepoplstartotl][strgnumblimbbody] = [np.random.poisson(dictpopl[strgbody][namepoplstartotl][strgnumblimbbodymean][0]), '']
@@ -2596,7 +2618,7 @@ def retr_dictpoplstarcomp( \
 
         listnamecatr = ['masssyst', 'radistar']
         if strglimb == 'comp':
-            listnamecatr += ['pericomp', 'cosicomp', 'smaxcomp', 'eccecomp', 'arpacomp', 'loancomp', 'masscomp', 'epocmtracomp', 'rsmacomp', 'rsumcomp']
+            listnamecatr += ['pericomp', 'cosicomp', 'smaxcomp', 'eccecomp', 'arpacomp', 'loancomp', 'masscomp', 'epocmtracomp', 'rsmacomp', 'rsumcomp', 'distanglcomp']
             if typesyst == 'PlanetarySystemWithMoons':
                 listnamecatr += ['masscompmoon']
             if typesyst == 'PlanetarySystemWithNonKeplerianObjects':
@@ -2701,12 +2723,13 @@ def retr_dictpoplstarcomp( \
                 if typesamporbtcomp == 'peristab' or typesamporbtcomp == 'peripowr':
                     
                     if typesamporbtcomp == 'peristab':
-                        ratiperi = tdpy.util.icdf_powr(np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k] - 1), 1.2, 1.3, 5.)
+                        ratiperifrst = tdpy.util.icdf_powr(np.random.rand(1), 2., 1000., 0.5)[0]
+                        ratiperi = tdpy.util.icdf_powr(np.random.rand(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k] - 1), 1.2, 100., 2.)
 
                         listpericomp = []
                         for mm in range(dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]):
                             if mm == 0:
-                                peri = minmpericomp
+                                peri = minmpericomp * ratiperifrst
                             else:
                                 peri = ratiperi[mm-1] * listpericomp[mm-1]
                             listpericomp.append(peri)
@@ -2767,7 +2790,9 @@ def retr_dictpoplstarcomp( \
                                                                                                   dictpopl[strgbody][namepoplstartotl]['masssyst'][0][k], factnonk=factnonk)
                     
         
-                
+                dictpopl[strglimb][namepopllimbtotl]['distanglcomp'][0][dictindx[strglimb][strgbody][k]] = \
+                                        dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0][dictindx[strglimb][strgbody][k]] / dictstar['distsyst'][0][k]
+
                 if booldiag:
                     if not np.isfinite(dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]]).all():
                         print('')
