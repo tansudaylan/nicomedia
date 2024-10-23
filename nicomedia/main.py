@@ -2420,9 +2420,6 @@ def retr_dictpoplstarcomp( \
         else:
             raise Exception('')
         
-        print('dictstar[radistar]')
-        summgene(dictstar['radistar'][0])
-
         dictstar['coeflmdklinr'] = [0.4 * np.ones(numbsyst), '']
         dictstar['coeflmdkquad'] = [0.25 * np.ones(numbsyst), '']
 
@@ -2757,11 +2754,6 @@ def retr_dictpoplstarcomp( \
                     else:
                         factnonk = 1.
                     
-                    print('dictpopl[strglimb][namepopllimbtotl][smaxcomp][0][dictindx[strglimb][strgbody][k]]')
-                    summgene(dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0][dictindx[strglimb][strgbody][k]])
-                    print('dictpopl[strglimb][namepopllimbtotl][pericomp][0][dictindx[strglimb][strgbody][k]]')
-                    summgene(dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]])
-                    
                     dictpopl[strglimb][namepopllimbtotl]['smaxcomp'][0][dictindx[strglimb][strgbody][k]] = \
                                             retr_smaxkepl(dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]], \
                                                                                                      dictpopl[strgbody][namepoplstartotl]['masssyst'][0][k], factnonk=factnonk)
@@ -2865,10 +2857,6 @@ def retr_dictpoplstarcomp( \
                 numb = dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k]
 
                 # cosine of orbital inclinations
-                #print('dictpopl[strglimb][namepopllimbtotl][osicomp][0][dictindx[strglimb][strgbody][k]]')
-                #print(dictpopl[strglimb][namepopllimbtotl]['cosicomp'][0][dictindx[strglimb][strgbody][k]])
-                #print('maxmcosicomptemp * np.random.rand(numb)')
-                #print(maxmcosicomptemp * np.random.rand(numb))
                 dictpopl[strglimb][namepopllimbtotl]['cosicomp'][0][dictindx[strglimb][strgbody][k]] = maxmcosicomptemp * np.random.rand(numb)
                 
             if booldiag:
