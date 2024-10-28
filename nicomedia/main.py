@@ -2377,6 +2377,8 @@ def retr_dictpoplstarcomp( \
         dictstar = retr_dictpopltic8(typepoplsyst, numbsyst=numbsyst)
         
         print('Removing stars that do not have radii or masses...')
+        print('dictstar[radistar]')
+        print(dictstar['radistar'])
         indx = np.where(np.isfinite(dictstar['radistar'][0]) & \
                         np.isfinite(dictstar['massstar'][0]))[0]
         for name in dictstar.keys():
