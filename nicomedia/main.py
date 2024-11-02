@@ -1440,16 +1440,16 @@ def retr_radifrommass( \
         # interpolate masses
         listradi = np.empty_like(listmassplan)
         
-        indx = np.where(listmassplan < 2.)[0]
+        indx = np.where(listmassplan <= 2.)[0]
         listradi[indx] = listmassplan[indx]**0.28
         
         indx = np.where((listmassplan > 2.) & (listmassplan < 130.))[0]
-        listradi[indx] = 5. * (listmassplan[indx] / 20.)**(-0.59)
+        listradi[indx] = 4.48 * (listmassplan[indx] / 20.)**(0.57)
         
-        indx = np.where((listmassplan > 130.) & (listmassplan < 2.66e4))[0]
-        listradi[indx] = 10. * (listmassplan[indx] / 1e5)**(-0.04)
+        indx = np.where((listmassplan >= 130.) & (listmassplan < 2.66e4))[0]
+        listradi[indx] = 10.1 * (listmassplan[indx] / 1e5)**(-0.04)
         
-        indx = np.where(listmassplan > 2.66e4)[0]
+        indx = np.where(listmassplan >= 2.66e4)[0]
         listradi[indx] = 20. * (listmassplan[indx] / 5e4)**0.88
     
     return listradi
@@ -2256,10 +2256,13 @@ def retr_dictpoplstarcomp( \
                           ## 'peristab': orbital periods are sampled first, respecting stability, and then semi-major axies are calculated
                           ## 'peripowr': orbital periods are sampled from a power law regardless of stability and then semi-major axies are calculated
                           typesamporbtcomp='peristab', \
-
-                          # distances to the systems
-                          distsyst=None, \
                           
+                          # stellar properties (if scalar, resample from the same star)
+                          ## distances to the systems
+                          distsyst=None, \
+                          ## mass of the star(s)
+                          massstar=None, \
+
                           # minimum number of components per star
                           minmnumbcompstar=1, \
                           
@@ -2402,26 +2405,41 @@ def retr_dictpoplstarcomp( \
         
         if distsyst is None:
             dictstar['distsyst'] = [tdpy.icdf_powr(np.random.rand(numbsyst), 100., 7000., -2.), 'pc']
-        else:
+        elif isinstance(distsyst, np.ndarray):
             dictstar['distsyst'] = [distsyst, 'pc']
-            
+        elif isinstance(distsyst, float):
+            dictstar['distsyst'] = [np.full(numbsyst, distsyst), 'pc']
+        
+        # stellar masses, radii, and densities
+        ## all masses and radii should be in solar units and densities should be in g/cm3
+        dictstar['radistar'] = [[], []]
+        dictstar['massstar'] = [[], []]
+        dictstar['densstar'] = [[], []]
         if typestar == 'sunl':
-            dictstar['radistar'] = [np.ones(numbsyst), '$R_{\odot}$']
-            dictstar['massstar'] = [np.ones(numbsyst), '$M_{\odot}$']
-            dictstar['densstar'] = [1.4 * np.ones(numbsyst), 'g cm$^{-3}$']
-        elif typestar == 'drawkrou':
-            dictstar['massstar'] = [tdpy.icdf_powr(np.random.rand(numbsyst), 0.1, 10., 2.), '$M_{\odot}$']
-            dictstar['densstar'] = [1.4 * (1. / dictstar['massstar'][0])**(0.7), 'g cm$^{-3}$']
-            dictstar['radistar'] = [(1.4 * dictstar['massstar'][0] / \
-                                                                                        dictstar['densstar'][0])**(1. / 3.), '$R_{\odot}$']
-            raise Exception('To be implemented')
+            dictstar['radistar'][0] = np.ones(numbsyst)
+            dictstar['massstar'][0] = np.ones(numbsyst)
+            dictstar['densstar'][0] = np.full(numbsyst, 1.4)
+        elif massstar is not None or typestar == 'drawkrou':
+            if massstar is not None:
+                dictstar['massstar'][0] = np.full(numbsyst, massstar)
+            if typestar == 'drawkrou':
+                dictstar['massstar'][0] = tdpy.icdf_powr(np.random.rand(numbsyst), 0.1, 10., 2.)
+            if radistar is not None:
+                dictstar['radistar'][0] = np.full(numbsyst, radistar)
+                dictstar['densstar'][0] = 1.4 * dictstar['massstar'][0] / dictstar['radistar'][0]**3
+            else:
+                dictstar['densstar'][0] = 1.4 * dictstar['massstar'][0]**(-0.7)
+                dictstar['radistar'][0] = 1.4 * dictstar['massstar'][0] / dictstar['densstar'][0]**(1. / 3.)
         elif typestar == 'wdwf':
-            dictstar['radistar'] = [0.01 * np.ones(numbsyst), '$R_{\odot}$']
-            dictstar['massstar'] = [np.ones(numbsyst), '$M_{\odot}$']
-            dictstar['densstar'] = [1.4e6 * np.ones(numbsyst), 'g cm$^{-3}$']
+            dictstar['radistar'][0] = [0.01 * np.ones(numbsyst), '$R_{\odot}$']
+            dictstar['massstar'][0] = [np.ones(numbsyst), '$M_{\odot}$']
+            dictstar['densstar'][0] = [1.4e6 * np.ones(numbsyst), 'g cm$^{-3}$']
         else:
             raise Exception('')
-        
+        dictstar['radistar'][1] = '$R_{\odot}$'
+        dictstar['massstar'][1] = '$M_{\odot}$'
+        dictstar['densstar'][1] = 'g cm$^{-3}$'
+
         dictstar['coeflmdklinr'] = [0.4 * np.ones(numbsyst), '']
         dictstar['coeflmdkquad'] = [0.25 * np.ones(numbsyst), '']
 
