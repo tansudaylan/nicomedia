@@ -534,22 +534,32 @@ def retr_dictpopltic8( \
             print('Writing to %s...' % path)
         #columns = ['TICID', 'radi', 'mass']
         dictquertemp = dict()
-        listnamefeat = list(dictquertemp.keys())
+        listnamefeat = list(dictquer.keys())
         listhead = []
         for namefeat in listnamefeat:
             strghead = namefeat
             if dictquer[namefeat][1] != '':
-                strghead += '[%s]' % dictquer[namefeat][1]
+                strghead += ' [%s]' % dictquer[namefeat][1]
             listhead.append(strghead)
             dictquertemp[namefeat] = dictquer[namefeat][0]
+        print('dictquertemp')
+        print(dictquertemp)
+        print('listhead')
+        print(listhead)
         pd.DataFrame.from_dict(dictquertemp).to_csv(path, header=listhead, index=False)#, columns=columns)
+        dictquer = dictquertemp
     else:
         if typeverb > 0:
             print('Reading from %s...' % path)
-        dictquer = pd.read_csv(path, nrows=numbsyst).to_dict(orient='list')
-        
+        dictquertemp = pd.read_csv(path, nrows=numbsyst).to_dict(orient='list')
+        dictquer = dict()
         for name in dictquer.keys():
-            dictquer[name][0] = np.array(dictquer[name][0])
+            print('name')
+            print(name)
+            dictquer[name] = [[], []]
+            dictquer[name][0] = np.array(dictquertemp[name])
+            nameunit = name.split('[')[1].split(']')[0]
+            dictquer[name][1] = nameunit
 
     #if gdat.typedata == 'simuinje':
     #    indx = np.where((~np.isfinite(gdat.dictfeat['true']['ssys']['massstar'])) | (~np.isfinite(gdat.dictfeat['true']['ssys']['radistar'])))[0]
@@ -2431,9 +2441,9 @@ def retr_dictpoplstarcomp( \
                 dictstar['densstar'][0] = 1.4 * dictstar['massstar'][0]**(-0.7)
                 dictstar['radistar'][0] = 1.4 * dictstar['massstar'][0] / dictstar['densstar'][0]**(1. / 3.)
         elif typestar == 'wdwf':
-            dictstar['radistar'][0] = [0.01 * np.ones(numbsyst), '$R_{\odot}$']
-            dictstar['massstar'][0] = [np.ones(numbsyst), '$M_{\odot}$']
-            dictstar['densstar'][0] = [1.4e6 * np.ones(numbsyst), 'g cm$^{-3}$']
+            dictstar['radistar'] = [0.01 * np.ones(numbsyst), '$R_{\odot}$']
+            dictstar['massstar'] = [np.ones(numbsyst), '$M_{\odot}$']
+            dictstar['densstar'] = [1.4e6 * np.ones(numbsyst), 'g cm$^{-3}$']
         else:
             raise Exception('')
         dictstar['radistar'][1] = '$R_{\odot}$'
@@ -2445,6 +2455,8 @@ def retr_dictpoplstarcomp( \
 
         dictstar['tmptstar'] = [6000 * dictstar['massstar'][0], 'K']
         
+        print('dictstar[tmptstar][0]')
+        print(dictstar['tmptstar'][0])
         dictstar['lumistar'] = [4. * np.pi * dictstar['tmptstar'][0]**4 * dictstar['radistar'][0]**2, '$L_{\odot}$']
         
         dictstar['fluxbolostar'] = [1361. * dictstar['lumistar'][0] / dictstar['distsyst'][0]**2 / 4. / np.pi, 'W/m^2']
@@ -2672,7 +2684,6 @@ def retr_dictpoplstarcomp( \
                 print(dictnumbsamp[strglimb][namepopllimbtotl])
                 raise Exception('cntr != dictnumbsamp[strglimb][namepopllimbtotl]')
     
-        print('Sampling features...')
         for k in tqdm(range(numbstar)):
             
             if dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k] == 0:
@@ -2832,6 +2843,31 @@ def retr_dictpoplstarcomp( \
                                                    dictpopl[strglimb][namepopllimbtotl]['pericomp'][k] * \
                                                    np.round((dictpopl[strglimb][namepopllimbtotl]['epocmtracomp'][k] - timeepoc) / dictpopl[strglimb][namepopllimbtotl]['pericomp'][k])
     
+        # derived stellar features --  dictpopl[strgbody][namepoplstartotl] should not be enhanced with derived features before this
+        # Boolean flag indicating whether the system has an inner, Earth-sized rocky planet
+        dictpopl[strgbody][namepoplstartotl]['boolelik'] = [np.empty(numbstar, dtype=bool), '']
+        # Boolean flag indicating whether the system has an outer, Jupiter-sized giant planet
+        dictpopl[strgbody][namepoplstartotl]['booljlik'] = [np.empty(numbstar, dtype=bool), '']
+        
+        for k in tqdm(range(numbstar)):
+            
+            dictpopl[strgbody][namepoplstartotl]['boolelik'][0][k] = np.where( \
+                                                                              (dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]] > 0.5 * 365.25) & \
+                                                                              (dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]] < 2. * 365.25) & \
+                                                                              (dictpopl[strglimb][namepopllimbtotl]['radicomp'][0][dictindx[strglimb][strgbody][k]] > 0.5) & \
+                                                                              (dictpopl[strglimb][namepopllimbtotl]['radicomp'][0][dictindx[strglimb][strgbody][k]] < 2.) \
+                                                                             )[0].size > 0
+            
+            dictpopl[strgbody][namepoplstartotl]['booljlik'][0][k] = np.where( \
+                                                                        (dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]] > 0.5 * 11.86 * 365.25) & \
+                                                                        (dictpopl[strglimb][namepopllimbtotl]['pericomp'][0][dictindx[strglimb][strgbody][k]] < 2. * 11.86 * 365.25) & \
+                                                                        (dictpopl[strglimb][namepopllimbtotl]['radicomp'][0][dictindx[strglimb][strgbody][k]] > 0.6 * 11.2) & \
+                                                                        (dictpopl[strglimb][namepopllimbtotl]['radicomp'][0][dictindx[strglimb][strgbody][k]] < 1.5 * 11.2) \
+                                                                             )[0].size > 0
+            
+        # Boolean flag indicating whether the system has a an inner, Earth-sized rocky planet AND outer, Jupiter-sized giant planet
+        dictpopl[strgbody][namepoplstartotl]['boolelikjlik'] = [dictpopl[strgbody][namepoplstartotl]['boolelik'][0] & dictpopl[strgbody][namepoplstartotl]['booljlik'][0], '']
+
         if strglimb == 'comp':
             if typesyst == 'PlanetarySystemWithMoons':
                 # initialize the total mass of the companion + moons system as the mass of the companion
@@ -2922,7 +2958,7 @@ def retr_dictpoplstarcomp( \
                         print('')
                         print('')
                         raise Exception('not np.isfinite(dictpopl[comp][namepopllimbtotl][rratcomp]).all()')
-                    
+            
             # Boolean flag indicating whether a companion is transiting
             dictpopl[strglimb][namepopllimbtotl]['booltran'] = [dictpopl[strglimb][namepopllimbtotl]['rsmacomp'][0] > dictpopl[strglimb][namepopllimbtotl]['cosicomp'][0], '']
 
@@ -2948,6 +2984,8 @@ def retr_dictpoplstarcomp( \
                                                                                            dictpopl[strglimb][namepoplcomptran]['radistar'][0], \
                                                                                            dictpopl[strglimb][namepoplcomptran]['masscomp'][0], \
                                                                                            dictpopl[strglimb][namepoplcomptran]['massstar'][0])
+            
+
             
             if typesyst == 'PlanetarySystem':
                 # transit depth
