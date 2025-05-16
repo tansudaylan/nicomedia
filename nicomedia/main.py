@@ -1845,7 +1845,7 @@ def retr_dictexar( \
         # bolometric flux of a star based on radius and temperature
         dictexar['lumibbodbolohost'] = retr_fluxbolobbod(dictexar['tmptstar'], dictexar['radistar'])
         
-        dictxraystar = retr_dictxraystar(dictexar['tmptstar'], dictexar['radistar'], lumibbodbolo=dictexar['lumibbodbolohost'])
+        dictxraystar = retr_dictxraystar(dictexar['tmptstar'], dictexar['radistar'])
         dictexar['fracxrayboloaddihost'] = dictxraystar['fracxrayboloaddi']
         dictexar['fluxbbod0224host'] = dictxraystar['fluxbbod0224']
         dictexar['lumibbod0224host'] = dictxraystar['lumibbod0224']
@@ -1913,26 +1913,23 @@ def retr_dictexar( \
     return dictexar
 
 
-def retr_dictxraystar(tmptstar, radistar, lumibbodbolo=None):
+def retr_dictxraystar(tmptstar, radistar):
     '''
     Return a dictionary with predicted X-ray-related properties of stars 
     '''
     
     dictfact = tdpy.retr_factconv()
     
-    listnameoutp = ['fracxrayboloaddi', 'fluxbbod0224', 'lumibbod0224', 'lumipred0224', 'fluxpred0224']
+    listnameoutp = ['fracxrayboloaddi', 'fluxbbod0224', 'lumibbod0224', 'lumipred0224', 'fluxpred0224', 'lumibbodbolotest']
 
-    if lumibbodbolo is None:
-        listnameoutp += ['lumibbodbolo']
-    
     dictxraystar = tdpy.retr_dict(listnameoutp)
     
-    if lumibbodbolo is None:
-        dictxraystar['lumibbodbolo'][0] = retr_fluxbolobbod(dictexar['tmptstar'][0], dictexar['radistar'][0])
+    dictxraystar['lumibbodbolo'] = retr_fluxbolobbod(tmptstar, radistar)
     
     # M3 star, 3500 K, (FX=8.4e-17erg/s/cm2 ; 0.2-2.4keV) at a distance of 2.5 kpc
     blimener = retr_blimener(typeband='AXIS0224')
     functran = retr_functran(typeinst='AXIS', xdat=blimener)
+    blimenerbolo = retr_blimener(typeband='bolo')
         
     # ratio of X-ray flux to bolometric flux
     # Solar LX/Lbol is 6e-7
@@ -1942,19 +1939,39 @@ def retr_dictxraystar(tmptstar, radistar, lumibbodbolo=None):
     dictxraystar['fracxrayboloaddi'][1] = ''
 
     numbstar = tmptstar[0].size
-    indxplanexar = np.arange(numbstar)
+    indxstar = np.arange(numbstar)
     dictxraystar['fluxbbod0224'][0] = np.empty(numbstar)
-    for k in indxplanexar:
+    dictxraystar['lumibbodbolotest'][0] = np.empty(numbstar)
+    for k in indxstar:
         fluxspecbbod = retr_fluxspecbbodener(tmptstar[0][k], blimener) # ergs/s/cm^2/eV
 
         # Sun: 1e27 erg/s, Capella: 1e31 erg/s
         dictxraystar['fluxbbod0224'][0][k] = np.trapz(fluxspecbbod * functran, x=blimener)
+        
+        fluxspecbbodtest = retr_fluxspecbbodener(tmptstar[0][k], blimenerbolo) # ergs/s/cm^2/eV
+        dictxraystar['lumibbodbolotest'][0][k] = np.trapz(fluxspecbbodtest, x=blimenerbolo)
+        if False and abs(fluxbbodbolotest - dictxraystar['lumibbodbolo'][0][k]) / dictxraystar['lumibbodbolo'][0][k] > 0.01:
+            print('')
+            print('')
+            print('')
+            print('tmptstar[0][k]')
+            print(tmptstar[0][k])
+            print('blimenerbolo')
+            summgene(blimenerbolo)
+            print('fluxspecbbodtest')
+            summgene(fluxspecbbodtest)
+            print('fluxbbodbolotest')
+            print(fluxbbodbolotest)
+            print('dictxraystar[lumibbodbolo][0][k]')
+            print(dictxraystar['lumibbodbolo'][0][k])
+            raise Exception('')
+
     dictxraystar['fluxbbod0224'][1] = 'ergs s$^{-1}$cm$^{-2}$'
     
     dictxraystar['lumibbod0224'][0] = 4. * np.pi * (6.957e10 * radistar[0])**2 * dictxraystar['fluxbbod0224'][0] # [erg/s]
     dictxraystar['lumibbod0224'][1] = 'ergs s$^{-1}$'
     
-    dictxraystar['lumipred0224'][0] = dictxraystar['lumibbod0224'][0] + dictxraystar['fracxrayboloaddi'][0] * lumibbodbolo[0]
+    dictxraystar['lumipred0224'][0] = dictxraystar['lumibbod0224'][0] + dictxraystar['fracxrayboloaddi'][0] * dictxraystar['lumibbodbolo'][0]
     dictxraystar['lumipred0224'][1] = 'ergs s$^{-1}$'
     
     dictxraystar['fluxpred0224'][0] = dictxraystar['lumipred0224'][0] / 4. / np.pi / (radistar[0] * dictfact['pccm'])**2
@@ -1967,8 +1984,9 @@ def retr_fluxbolobbod(tmptstar, radistar):
     
     fluxbolobbod = [[], []]
     
-    if tmptstar[1] == 'K' and radistar[1] == 'R$_{\odot}$':
-        fluxbolobbod[0] = 2.744e17 * tmptstar[0]**4 * radistar[0]**2 # [erg/s]
+    if tmptstar[1] == 'K' and radistar[1][-6:-2] == 'odot':
+        # Solar value is 3.826e33 erg/s for tmptstar == 5772 and radistar = 1
+        fluxbolobbod[0] = 3.447e18 * tmptstar[0]**4 * radistar[0]**2 # [erg/s]
         fluxbolobbod[1] = 'erg/s'
     else:
         print('')
@@ -1984,9 +2002,16 @@ def retr_fluxbolobbod(tmptstar, radistar):
 
 
 def retr_blimener(typeband):
-
+    '''
+    Return an energy gris in electronvolts (eV).
+    '''
+    
     if typeband == 'AXIS0224':
+        xdat = 'evol'
         ener = np.logspace(np.log10(200.), np.log10(2400.), 400) # [eV]
+    elif typeband == 'bolo':
+        xdat = 'evol'
+        ener = np.logspace(-5., 6., 1000)
     else:
         raise Exception('')
 
@@ -2041,7 +2066,8 @@ def retr_fluxspecbbod(tmpt, xdat=None, typeband=None, typexdat=None):
 
 def retr_fluxspecbbodener(tmpt, ener):
     
-    spec = 1e30 * ener**3 / (np.exp(1.1605e4 * ener / tmpt) - 1.) # [erg/m^2/s/eV]
+    # Boltzmann constant is 8.617×10^-5 J / K
+    spec = 1.4e30 * ener**3 / (np.exp(ener / (8.617e-5 * tmpt)) - 1.) # [erg/m^2/s/eV]
 
     return spec
 
