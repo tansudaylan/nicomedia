@@ -656,7 +656,7 @@ def retr_dictfluxband(tmptstar, liststrgband, gdatfluxband=None, pathvisutarg=No
         gdatfluxband.numbband = len(liststrgband)
         gdatfluxband.indxband = np.arange(gdatfluxband.numbband)
     
-    specbbod = retr_fluxspecbbod(tmptstar, gdatfluxband.midpwlen)
+    specbbod = retr_fluxspecbbod(tmptstar, xdat=gdatfluxband.midpwlen, typexdat='wlen')
     
     if pathvisutarg is not None:
         path = pathvisutarg + 'fluxband_%s' % strgtarg
@@ -2042,21 +2042,13 @@ def retr_fluxspecbbod(tmpt, xdat=None, typeband=None, typexdat=None):
         if typexdat is None:
             typexdat = 'wlen'
 
-    #print('xdat')
-    #print(xdat)
-    #print('tmpt')
-    #print(tmpt)
-
     #0.0143877735e6 # [um K]
     #spec = 3.742e11 / wlen**5 / (np.exp(0.0143877735e6 / (wlen * tmpt)) - 1.)
     
     # 1 electronvolt (eV) == 1.24 microns
     #print('temp: need to check the fudge factor here to go from temperature to W/m^2')
         # M3 star, 3500 K, (FX=8.4e-17erg/s/cm2 ; 0.2-2.4keV) at a distance of 2.5 kpc
-    fluxspec = retr_fluxspecbbodener(tmpt, ener)
-    
-    #print('spec')
-    #print(spec)
+    fluxspec = retr_fluxspecbbodener(tmpt, xdat)
 
     if typeband is not None:
         return fluxspec, xdat
