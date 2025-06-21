@@ -1842,16 +1842,6 @@ def retr_dictexar( \
                 dictexar[strg][1] = 'R$_{\odot}$'
         
         
-        # bolometric flux of a star based on radius and temperature
-        dictexar['lumibbodbolohost'] = retr_fluxbolobbod(dictexar['tmptstar'], dictexar['radistar'])
-        
-        dictxraystar = retr_dictxraystar(dictexar['tmptstar'], dictexar['radistar'])
-        dictexar['fracxrayboloaddihost'] = dictxraystar['fracxrayboloaddi']
-        dictexar['fluxbbod0224host'] = dictxraystar['fluxbbod0224']
-        dictexar['lumibbod0224host'] = dictxraystar['lumibbod0224']
-        dictexar['lumipred0224host'] = dictxraystar['lumipred0224']
-        dictexar['fluxpred0224host'] = dictxraystar['fluxpred0224']
-        
         dictexar['vesc'][0] = retr_vesc(dictexar[strgmasselem][0], dictexar[strgradielem][0])
         dictexar['masstotl'][0] = dictexar['massstar'][0] + dictexar[strgmasselem][0] / dictfact['msme']
         
@@ -1900,16 +1890,67 @@ def retr_dictexar( \
         # sum of the companion and stellar radii divided by the semi-major axis
         dictexar['rsmacomp'][0] = (dictexar[strgradielem][0] / dictfact['rsre'] + dictexar['radistar'][0]) / (dictexar['smaxcomp'][0] * dictfact['aurs'])
         
+        # derived properties
+        # bolometric flux of a star based on radius and temperature
+        dictexar['lumibbodbolohost'] = retr_fluxbolobbod(dictexar['tmptstar'], dictexar['radistar'])
+        
+        # X-ray flux of the host star
+        dictxraystar = retr_dictxraystar(dictexar['tmptstar'], dictexar['radistar'])
+        dictexar['fracxrayboloaddihost'] = dictxraystar['fracxrayboloaddi']
+        dictexar['fluxbbod0224host'] = dictxraystar['fluxbbod0224']
+        dictexar['lumibbod0224host'] = dictxraystar['lumibbod0224']
+        dictexar['lumipred0224host'] = dictxraystar['lumipred0224']
+        dictexar['fluxpred0224host'] = dictxraystar['fluxpred0224']
+        
+        # surface gravity of the companion
+        dictexar['loggcomp'][0] = np.log10(9.8 * dictexar[strgmasselem][0] / dictexar[strgradielem][0]**2)
+
         # calculate TSM and ESM
         calc_tsmmesmm(dictexar, strgelem=strgelem)
+
+        # calculate the atmospheric loss over time 
+        numbtime = 20
+        binstime, midptime, delttime, numbrimstime, indx = tdpy.retr_axis(binsgrid=np.logspace(0, 3, numbtime), boolinte=False)
+        listlablfeatcomm = [['Planetary radius', ''], ['XUV Irradiation', '$I_{\oplus}$']]
+        listpara = np.empty((dictpopl['totl']['radicomp'][0].size, numbtime, 3))
+        
+        # core mass
+        listpara[:, 0, 0] = tdpy.samp_powr(numbcomp, 0.1, 10., 2.)
+        
+        # envelope mass
+        listpara[:, 0, 1] = tdpy.samp_powr(numbcomp, 0.1, 1000., 2.)
+        
+        listpara[:, 0, 2] = tdpy.samp_powr(numbcomp, 0.1, 5., 2.)
+        
+        #listpara[:, 0, 3] = tdpy.samp_powr(numbcomp, 0.1, 10000., 2.)
+        
+        #listpara[:, 0, 0] = dictpopl['totl']['radiplan']
+        #listpara[:, 0, 2] = dictpopl['totl']['irra'] * 1e1
+        #listpara[:, 0, 2][np.where(listpara[:, 0, 1] <= 0.)[0]] = np.nan
+        
+        binsgridinpt = [np.linspace(0.5, 5., 100), np.logspace(0, 5, 100)]
+        for t in range(numbtime - 1):
+            if t > 0:
+                
+                listpara[:, t, 2] = listpara[:, 0, 2] * (midptime[t])**(-0.5)
+        
+                if np.amin(listpara[:, t, 1]) <= 0.:
+                    print('t')
+                    print(t)
+                    print('listpara[:, t, 1]')
+                    print(listpara[:, t, 1])
+                    raise Exception('')
+        
+                #delt = np.exp(-0.5 * ((listpara[:, t-1, 0] - 1.6) / 0.3)**2) * delttime[t] * listpara[:, t, 2]
+                #delt = np.exp(-0.5 * ((listpara[:, t-1, 1] - ) / 0.3)**2) * delttime[t] * listpara[:, t, 2]
+                delt *= 0.1 / np.nanmax(delt)
+                
+                listpara[:, t, 1] = listpara[:, t-1, 1] * (1. - delt)
         
         indxnonntran = np.where(~dictexar['booltran'][0])[0]
         dictexar['esmm'][0][indxnonntran] = np.nan
         dictexar['tsmm'][0][indxnonntran] = np.nan
         
-        # surface gravity of the companion
-        dictexar['loggcomp'][0] = np.log10(9.8 * dictexar[strgmasselem][0] / dictexar[strgradielem][0]**2)
-
     return dictexar
 
 
