@@ -2636,8 +2636,6 @@ def retr_dictpoplstarcomp( \
         dictstar = retr_dictpopltic8(typepoplsyst, numbsyst=numbsyst)
         
         print('Removing stars that do not have radii or masses...')
-        print('dictstar[radistar]')
-        print(dictstar['radistar'])
         indx = np.where(np.isfinite(dictstar['radistar'][0]) & \
                         np.isfinite(dictstar['massstar'][0]))[0]
         for name in dictstar.keys():
@@ -2701,8 +2699,6 @@ def retr_dictpoplstarcomp( \
 
         dictstar['tmptstar'] = [6000 * dictstar['massstar'][0], 'K']
         
-        print('dictstar[tmptstar][0]')
-        print(dictstar['tmptstar'][0])
         dictstar['lumistar'] = [4. * np.pi * dictstar['tmptstar'][0]**4 * dictstar['radistar'][0]**2, '$L_{\odot}$']
         
         dictstar['fluxbolostar'] = [1361. * dictstar['lumistar'][0] / dictstar['distsyst'][0]**2 / 4. / np.pi, 'W/m^2']
@@ -2930,6 +2926,7 @@ def retr_dictpoplstarcomp( \
                 print(dictnumbsamp[strglimb][namepopllimbtotl])
                 raise Exception('cntr != dictnumbsamp[strglimb][namepopllimbtotl]')
     
+        print('Iterating over the stars...')
         for k in tqdm(range(numbstar)):
             
             if dictpopl[strgbody][namepoplstartotl][strgnumblimbbody][0][k] == 0:
@@ -3095,6 +3092,7 @@ def retr_dictpoplstarcomp( \
         # Boolean flag indicating whether the system has an outer, Jupiter-sized giant planet
         dictpopl[strgbody][namepoplstartotl]['booljlik'] = [np.empty(numbstar, dtype=bool), '']
         
+        print('Iterating over the stars...')
         for k in tqdm(range(numbstar)):
             
             dictpopl[strgbody][namepoplstartotl]['boolelik'][0][k] = np.where( \
