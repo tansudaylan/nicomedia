@@ -1912,20 +1912,20 @@ def retr_dictexar( \
         numbtime = 20
         binstime, midptime, delttime, numbrimstime, indx = tdpy.retr_axis(binsgrid=np.logspace(0, 3, numbtime), boolinte=False)
         listlablfeatcomm = [['Planetary radius', ''], ['XUV Irradiation', '$I_{\oplus}$']]
-        listpara = np.empty((dictpopl['totl']['radicomp'][0].size, numbtime, 3))
+        listpara = np.empty((dictexar['radicomp'][0].size, numbtime, 3))
         
         # core mass
-        listpara[:, 0, 0] = tdpy.samp_powr(numbcomp, 0.1, 10., 2.)
+        listpara[:, 0, 0] = tdpy.samp_powr(numbplanexar, 0.1, 10., 2.)
         
         # envelope mass
-        listpara[:, 0, 1] = tdpy.samp_powr(numbcomp, 0.1, 1000., 2.)
+        listpara[:, 0, 1] = tdpy.samp_powr(numbplanexar, 0.1, 1000., 2.)
         
-        listpara[:, 0, 2] = tdpy.samp_powr(numbcomp, 0.1, 5., 2.)
+        listpara[:, 0, 2] = tdpy.samp_powr(numbplanexar, 0.1, 5., 2.)
         
-        #listpara[:, 0, 3] = tdpy.samp_powr(numbcomp, 0.1, 10000., 2.)
+        #listpara[:, 0, 3] = tdpy.samp_powr(numbplanexar, 0.1, 10000., 2.)
         
-        #listpara[:, 0, 0] = dictpopl['totl']['radiplan']
-        #listpara[:, 0, 2] = dictpopl['totl']['irra'] * 1e1
+        #listpara[:, 0, 0] = dictexar['radiplan']
+        #listpara[:, 0, 2] = dictexar['irra'] * 1e1
         #listpara[:, 0, 2][np.where(listpara[:, 0, 1] <= 0.)[0]] = np.nan
         
         binsgridinpt = [np.linspace(0.5, 5., 100), np.logspace(0, 5, 100)]
@@ -1941,7 +1941,7 @@ def retr_dictexar( \
                     print(listpara[:, t, 1])
                     raise Exception('')
         
-                #delt = np.exp(-0.5 * ((listpara[:, t-1, 0] - 1.6) / 0.3)**2) * delttime[t] * listpara[:, t, 2]
+                delt = np.exp(-0.5 * ((listpara[:, t-1, 0] - 1.6) / 0.3)**2) * delttime[t] * listpara[:, t, 2]
                 #delt = np.exp(-0.5 * ((listpara[:, t-1, 1] - ) / 0.3)**2) * delttime[t] * listpara[:, t, 2]
                 delt *= 0.1 / np.nanmax(delt)
                 
