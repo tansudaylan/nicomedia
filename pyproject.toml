@@ -35,4 +35,5 @@ include = ["nicomedia*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-python_files = ["test*.py", "tests.py"]
+python_files = ["test_*.py"]
+addopts = ["--import-mode=importlib"]

@@ -8,6 +8,10 @@ import astroquery
 import scipy
 
 import tdpy
+from tdpy import retr_singgaus as retr_singgaus_tdpy
+from tdpy import retr_singking as retr_singking_tdpy
+from tdpy import retr_doubgaus as retr_doubgaus_tdpy
+from tdpy import retr_gausking as retr_gausking_tdpy
 from tdpy import retr_doubking as retr_doubking_tdpy
 from tdpy import summgene
 import chalcedon
@@ -45,38 +49,23 @@ def retr_psfnwdth( \
 
 
 def retr_singgaus(scaldevi, sigc):
-    
-    psfn = 1. / 2. / np.pi / sigc**2 * np.exp(-0.5 * scaldevi**2 / sigc**2)
-
-    return psfn
+    return retr_singgaus_tdpy(scaldevi, sigc)
 
 
 def retr_singking(scaldevi, sigc, gamc):
-    
-    psfn = 1. / 2. / np.pi / sigc**2 * (1. - 1. / gamc) * (1. + scaldevi**2 / 2. / gamc / sigc**2)**(-gamc)
-
-    return psfn
+    return retr_singking_tdpy(scaldevi, sigc, gamc)
 
 
 def retr_doubgaus(scaldevi, frac, sigc, sigt):
-    
-    psfn = frac / 2. / np.pi / sigc**2 * np.exp(-0.5 * scaldevi**2 / sigc**2) + (1. - frac) / 2. / np.pi / sigc**2 * np.exp(-0.5 * scaldevi**2 / sigc**2)
-
-    return psfn
+    return retr_doubgaus_tdpy(scaldevi, frac, sigc, sigt)
 
 
 def retr_gausking(scaldevi, frac, sigc, sigt, gamt):
-
-    psfn = frac / 2. / np.pi / sigc**2 * np.exp(-0.5 * scaldevi**2 / sigc**2) + (1. - frac) / 2. / np.pi / sigt**2 * (1. - 1. / gamt) * (1. + scaldevi**2 / 2. / gamt / sigt**2)**(-gamt)
-    
-    return psfn
+    return retr_gausking_tdpy(scaldevi, frac, sigc, sigt, gamt)
 
 
 def retr_doubking(scaldevi, frac, sigc, gamc, sigt, gamt):
-
-    psfn = retr_doubking_tdpy(scaldevi, frac, sigc, gamc, sigt, gamt)
-
-    return psfn
+    return retr_doubking_tdpy(scaldevi, frac, sigc, gamc, sigt, gamt)
 
 
 def retr_xposypos(gang, aang):
@@ -283,8 +272,8 @@ def xmat_tici(listtici, dictnamefeatmast):
         for k in range(len(dictquertemp)):
             dictquer[dictnamefeatmast[namefeat]].append(dictquertemp[k][namefeat])
         dictquer[dictnamefeatmast[namefeat]] = [np.array([dictquer[dictnamefeatmast[namefeat]]]), '']
-    dictquer['radistar'][1] = 'R_{\oplus}'
-    dictquer['massstar'][1] = 'M_{\oplus}'
+    dictquer['radistar'][1] = r'R_{\oplus}'
+    dictquer['massstar'][1] = r'M_{\oplus}'
     
     return dictquer
 
@@ -517,10 +506,10 @@ def retr_dictpopltic8( \
                     lablunit = 'degree'
                 if name == 'rad':
                     namefeat = 'radistar'
-                    lablunit = '$R_{\odot}$'
+                    lablunit = r'$R_{\odot}$'
                 if name == 'mass':
                     namefeat = 'massstar'
-                    lablunit = '$M_{\odot}$'
+                    lablunit = r'$M_{\odot}$'
                 dictquer[namefeat] = [np.empty(len(listdictquer)), lablunit]
                 for k in range(len(listdictquer)):
                     dictquer[namefeat][0][k] = listdictquer[k][name]
@@ -723,7 +712,7 @@ def retr_dictfluxband(tmptstar, liststrgband, gdatfluxband=None, pathvisutarg=No
     if boolconsgdat:
         if pathvisutarg is not None:
             axis.set_xscale('log')
-            axis.set_xlabel('Wavelength [$\mu$m]')
+            axis.set_xlabel(r'Wavelength [$\mu$m]')
             axis.set_ylabel('Spectrum')
             axistwin.legend()
             axistwin.set_ylabel('Transfer function')
@@ -1021,8 +1010,8 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
         
         tdpy.setp_dict(dicttoii, 'depttrancomp', objtexof['Depth (ppm)'].values[indxcomp] * 1e-3, 'ppt')
         tdpy.setp_dict(dicttoii, 'rratcomp', np.sqrt(dicttoii['depttrancomp'][0] * 1e-3))
-        tdpy.setp_dict(dicttoii, strgradielem, objtexof['Planet Radius (R_Earth)'][indxcomp].values, 'R$_{\oplus}$')
-        tdpy.setp_dict(dicttoii, strgstdvradi, objtexof['Planet Radius (R_Earth) err'][indxcomp].values, 'R$_{\oplus}$')
+        tdpy.setp_dict(dicttoii, strgradielem, objtexof['Planet Radius (R_Earth)'][indxcomp].values, r'R$_{\oplus}$')
+        tdpy.setp_dict(dicttoii, strgstdvradi, objtexof['Planet Radius (R_Earth) err'][indxcomp].values, r'R$_{\oplus}$')
         
         rascstarstrg = objtexof['RA'][indxcomp].values
         declstarstrg = objtexof['Dec'][indxcomp].values
@@ -1830,16 +1819,16 @@ def retr_dictexar( \
             dictexar[strg][0] = objtexar[strgvarbexar][indx].values
             dictexar['stdv%s' % strg][0] = stdv
             if strg == strgradielem:
-                dictexar[strg][1] = '$R_\oplus$'
-                dictexar['stdv%s' % strg][1] = '$R_\oplus$'
+                dictexar[strg][1] = r'$R_\oplus$'
+                dictexar['stdv%s' % strg][1] = r'$R_\oplus$'
             elif strg == strgmasselem:
-                dictexar[strg][1] = '$M_\oplus$'
-                dictexar['stdv%s' % strg][1] = '$M_\oplus$'
+                dictexar[strg][1] = r'$M_\oplus$'
+                dictexar['stdv%s' % strg][1] = r'$M_\oplus$'
             
             if strg == 'tmptstar':
                 dictexar[strg][1] = 'K'
             if strg == 'radistar':
-                dictexar[strg][1] = 'R$_{\odot}$'
+                dictexar[strg][1] = r'R$_{\odot}$'
         
         
         dictexar['vesc'][0] = retr_vesc(dictexar[strgmasselem][0], dictexar[strgradielem][0])
@@ -1911,7 +1900,7 @@ def retr_dictexar( \
         # calculate the atmospheric loss over time 
         numbtime = 20
         binstime, midptime, delttime, numbrimstime, indx = tdpy.retr_axis(binsgrid=np.logspace(0, 3, numbtime), boolinte=False)
-        listlablfeatcomm = [['Planetary radius', ''], ['XUV Irradiation', '$I_{\oplus}$']]
+        listlablfeatcomm = [['Planetary radius', ''], ['XUV Irradiation', r'$I_{\oplus}$']]
         listpara = np.empty((dictexar['radicomp'][0].size, numbtime, 3))
         
         # core mass
@@ -2685,13 +2674,13 @@ def retr_dictpoplstarcomp( \
                 dictstar['densstar'][0] = 1.4 * dictstar['massstar'][0]**(-0.7)
                 dictstar['radistar'][0] = 1.4 * dictstar['massstar'][0] / dictstar['densstar'][0]**(1. / 3.)
         elif typestar == 'wdwf':
-            dictstar['radistar'] = [0.01 * np.ones(numbsyst), '$R_{\odot}$']
-            dictstar['massstar'] = [np.ones(numbsyst), '$M_{\odot}$']
+            dictstar['radistar'] = [0.01 * np.ones(numbsyst), r'$R_{\odot}$']
+            dictstar['massstar'] = [np.ones(numbsyst), r'$M_{\odot}$']
             dictstar['densstar'] = [1.4e6 * np.ones(numbsyst), 'g cm$^{-3}$']
         else:
             raise Exception('')
-        dictstar['radistar'][1] = '$R_{\odot}$'
-        dictstar['massstar'][1] = '$M_{\odot}$'
+        dictstar['radistar'][1] = r'$R_{\odot}$'
+        dictstar['massstar'][1] = r'$M_{\odot}$'
         dictstar['densstar'][1] = 'g cm$^{-3}$'
 
         dictstar['coeflmdklinr'] = [0.4 * np.ones(numbsyst), '']
@@ -2699,7 +2688,7 @@ def retr_dictpoplstarcomp( \
 
         dictstar['tmptstar'] = [6000 * dictstar['massstar'][0], 'K']
         
-        dictstar['lumistar'] = [4. * np.pi * dictstar['tmptstar'][0]**4 * dictstar['radistar'][0]**2, '$L_{\odot}$']
+        dictstar['lumistar'] = [4. * np.pi * dictstar['tmptstar'][0]**4 * dictstar['radistar'][0]**2, r'$L_{\odot}$']
         
         dictstar['fluxbolostar'] = [1361. * dictstar['lumistar'][0] / dictstar['distsyst'][0]**2 / 4. / np.pi, 'W/m^2']
 
