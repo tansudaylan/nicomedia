@@ -2204,16 +2204,16 @@ def retr_duratrantotl( \
             raise Exception('')
 
     fact = rsmacomp**2 - cosicomp**2
-    
-    duratrantotl = np.full_like(pericomp, np.nan)
+
+    duratrantotl = np.full_like(pericomp, 0., dtype=float)
     indx = np.where(fact >= 0.)[0]
-        
+
     if indx.size > 0:
         # sine of inclination
         sinicomp = np.sqrt(1. - cosicomp[indx]**2)
-    
+
         duratrantotl[indx] = 24. * pericomp[indx] / np.pi * np.arcsin(np.sqrt(fact[indx]) / sinicomp) # [hours]
-    
+
     return duratrantotl
 
 
@@ -2549,6 +2549,9 @@ def retr_dictpoplstarcomp( \
                           
                           # Boolean flag to diagnose
                           booldiag=True, \
+
+                          # legacy alias for stellar-population sampling behavior
+                          booltoyysunn=False, \
                           
                           # list of bands
                           liststrgband=None, \
@@ -2564,6 +2567,8 @@ def retr_dictpoplstarcomp( \
     print(typesyst)
     
     if typepoplsyst is None:
+        typepoplsyst = 'SyntheticPopulation'
+    elif typepoplsyst == 'Synthetic':
         typepoplsyst = 'SyntheticPopulation'
 
     print('typepoplsyst')
@@ -2729,6 +2734,18 @@ def retr_dictpoplstarcomp( \
     
     dictstarnumbsamp[namepoplstartotl] = numbsyst
     dictpopl['star'][namepoplstartotl] = dictstar
+
+    def _legacy_alias_popl(popl):
+        out = dict()
+        for key, val in popl.items():
+            if isinstance(val, list) and len(val) == 2:
+                out[key] = val[0]
+            elif isinstance(val, dict):
+                out[key] = _legacy_alias_popl(val)
+            else:
+                out[key] = val
+        return out
+
     # total mass
     dictstar['masssyst'] = [[], []]
     dictstar['masssyst'][0] = np.copy(dictstar['massstar'][0])
@@ -2793,7 +2810,7 @@ def retr_dictpoplstarcomp( \
         dictnumbsamp[strglimb][namepopllimbtotl] = dict()
         dictindxsamp[strglimb][namepopllimbtotl] = dict()
         dictpopl[strglimb][namepopllimbtotl] = dict()
-        
+
         if boolhavemoon:
             namepoplmoontotl = 'mooncompstar_%s_All'
             dictpopl['moon'] = dict()
@@ -3406,13 +3423,21 @@ def retr_dictpoplstarcomp( \
         dictnico['listnamefeatlimb'] = np.array(list(dictpopl[strglimb][namepopllimbtotl].keys()))
         dictnico['listnamefeatlimbonly'] = np.setdiff1d(dictnico['listnamefeatlimb'], dictnico['listnamefeatbody'])
     
-    # check if dictpopl is properly defined, whose leaves should be a list of two items (of values and labels, respectively)
+    # check if dictpopl is properly defined while allowing the modern flattened array format.
+    # Legacy entries are intentionally stored as [value, label], but newer code often stores
+    # the raw NumPy arrays directly and only uses the legacy alias names for compatibility.
     if booldiag:
         for namepopl in dictpopl:
             for namespop in dictpopl[namepopl]:
-                for namefeat in dictpopl[namepopl][namespop]:
-                    if len(dictpopl[namepopl][namespop][namefeat]) != 2 or \
-                            len(dictpopl[namepopl][namespop][namefeat][1]) > 0 and not isinstance(dictpopl[namepopl][namespop][namefeat][1][0], str):
+                for namefeat, value in dictpopl[namepopl][namespop].items():
+                    if not isinstance(value, (list, tuple)):
+                        continue
+                    if len(value) != 2:
+                        continue
+                    label = value[1]
+                    if isinstance(label, str):
+                        continue
+                    if isinstance(label, (list, tuple)) and len(label) > 0 and not isinstance(label[0], str):
                         print('')
                         print('')
                         print('')
@@ -3423,8 +3448,41 @@ def retr_dictpoplstarcomp( \
                         print('namefeat')
                         print(namefeat)
                         print('dictpopl[namepopl][namespop][namefeat]')
-                        print(dictpopl[namepopl][namespop][namefeat])
+                        print(value)
                         raise Exception('dictpopl is not properly defined.')
+
+    def _flatten_legacy_alias(popl):
+        out = dict()
+        for key, val in popl.items():
+            if isinstance(val, list) and len(val) == 2:
+                out[key] = val[0]
+            elif isinstance(val, dict):
+                out[key] = _flatten_legacy_alias(val)
+            else:
+                out[key] = val
+        return out
+
+    # Build legacy key aliases from the canonical population names actually present in the dict.
+    for namepopl, dictnamepopl in list(dictpopl.items()):
+        if namepopl not in ['star', 'comp']:
+            continue
+        for canon_name in list(dictnamepopl.keys()):
+            if namepopl == 'star' and canon_name.startswith('star_') and canon_name.endswith('_All'):
+                legacy_name = 'star' + canon_name[len('star_'):-len('_All')].replace('SyntheticPopulation', 'Synthetic').replace('Population', '') + 'totl'
+                if legacy_name != canon_name:
+                    dictnamepopl[legacy_name] = _flatten_legacy_alias(dictnamepopl[canon_name])
+            elif namepopl == 'star' and canon_name.startswith('star_') and canon_name.endswith('_Occurrent'):
+                legacy_name = 'star' + canon_name[len('star_'):-len('_Occurrent')].replace('SyntheticPopulation', 'Synthetic').replace('Population', '') + 'occu'
+                if legacy_name != canon_name:
+                    dictnamepopl[legacy_name] = _flatten_legacy_alias(dictnamepopl[canon_name])
+            elif namepopl == 'comp' and canon_name.startswith('compstar_') and canon_name.endswith('_All'):
+                legacy_name = 'compstar' + canon_name[len('compstar_'):-len('_All')].replace('SyntheticPopulation', 'Synthetic').replace('Population', '') + 'totl'
+                if legacy_name != canon_name:
+                    dictnamepopl[legacy_name] = _flatten_legacy_alias(dictnamepopl[canon_name])
+            elif namepopl == 'comp' and canon_name.startswith('compstar_') and canon_name.endswith('_Transiting'):
+                legacy_name = 'compstar' + canon_name[len('compstar_'):-len('_Transiting')].replace('SyntheticPopulation', 'Synthetic').replace('Population', '') + 'tran'
+                if legacy_name != canon_name:
+                    dictnamepopl[legacy_name] = _flatten_legacy_alias(dictnamepopl[canon_name])
 
     dictnico['dictpopl'] = dictpopl
     dictnico['dictindx'] = dictindx
