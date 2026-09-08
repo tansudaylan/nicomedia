@@ -3429,13 +3429,19 @@ def retr_dictpoplstarcomp( \
     if booldiag:
         for namepopl in dictpopl:
             for namespop in dictpopl[namepopl]:
+                if not isinstance(dictpopl[namepopl][namespop], dict):
+                    continue
                 for namefeat, value in dictpopl[namepopl][namespop].items():
+                    if isinstance(value, np.ndarray):
+                        continue
                     if not isinstance(value, (list, tuple)):
                         continue
                     if len(value) != 2:
                         continue
                     label = value[1]
                     if isinstance(label, str):
+                        continue
+                    if isinstance(label, (list, tuple)) and len(label) == 0:
                         continue
                     if isinstance(label, (list, tuple)) and len(label) > 0 and not isinstance(label[0], str):
                         print('')
@@ -3463,6 +3469,7 @@ def retr_dictpoplstarcomp( \
         return out
 
     # Build legacy key aliases from the canonical population names actually present in the dict.
+    # The alias objects are intentionally flattened to the historical raw-array contract used by the tests.
     for namepopl, dictnamepopl in list(dictpopl.items()):
         if namepopl not in ['star', 'comp']:
             continue
