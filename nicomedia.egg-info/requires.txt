@@ -1,0 +1,8 @@
+astropy
+astroquery
+chalcedon
+numpy
+pandas
+scipy
+tdpy
+tqdm

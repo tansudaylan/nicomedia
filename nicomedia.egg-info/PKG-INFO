@@ -1,0 +1,26 @@
+Metadata-Version: 2.4
+Name: nicomedia
+Version: 0.1.0
+Summary: Numerical and catalog utilities for astrophysical workflows.
+Author-email: Tansu Daylan <tansu.daylan@gmail.com>
+License: MIT
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Scientific/Engineering :: Astronomy
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: astropy
+Requires-Dist: astroquery
+Requires-Dist: chalcedon
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: scipy
+Requires-Dist: tdpy
+Requires-Dist: tqdm
+Dynamic: license-file
+
+# nicomedia
+A library of numerical routines in astrophysics

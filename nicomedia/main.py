@@ -8,6 +8,7 @@ import astroquery
 import scipy
 
 import tdpy
+from tdpy import retr_doubking as retr_doubking_tdpy
 from tdpy import summgene
 import chalcedon
 
@@ -73,9 +74,8 @@ def retr_gausking(scaldevi, frac, sigc, sigt, gamt):
 
 def retr_doubking(scaldevi, frac, sigc, gamc, sigt, gamt):
 
-    psfn = frac / 2. / np.pi / sigc**2 * (1. - 1. / gamc) * (1. + scaldevi**2 / 2. / gamc / sigc**2)**(-gamc) + \
-    (1. - frac) / 2. / np.pi / sigt**2 * (1. - 1. / gamt) * (1. + scaldevi**2 / 2. / gamt / sigt**2)**(-gamt)
-    
+    psfn = retr_doubking_tdpy(scaldevi, frac, sigc, gamc, sigt, gamt)
+
     return psfn
 
 

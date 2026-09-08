@@ -1,0 +1,12 @@
+LICENSE
+README.md
+pyproject.toml
+nicomedia/__init__.py
+nicomedia/main.py
+nicomedia.egg-info/PKG-INFO
+nicomedia.egg-info/SOURCES.txt
+nicomedia.egg-info/dependency_links.txt
+nicomedia.egg-info/requires.txt
+nicomedia.egg-info/top_level.txt
+tests/test_retr_doubking.py
+tests/tests.py
