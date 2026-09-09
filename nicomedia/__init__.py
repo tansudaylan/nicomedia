@@ -1,3 +1,11 @@
+"""Compatibility surface for legacy astrophysical numerical helpers.
+
+The canonical numerical implementations live in tdpy. Nicomedia retains a small
+set of legacy convenience wrappers and historical function names for existing
+workflows, but the package intentionally warns users that new numerical code
+should be added in tdpy unless there is a strong repository-specific reason.
+"""
+
 import warnings
 
 warnings.warn(
@@ -6,3 +14,8 @@ warnings.warn(
 )
 
 from .main import *
+
+__all__ = [
+    name for name in globals()
+    if not name.startswith('_') and name not in {'warnings'}
+]
