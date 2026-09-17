@@ -8,7 +8,7 @@ import astroquery
 import scipy
 
 import tdpy
-from tdpy import retr_doubgaus, retr_doubking, retr_gausking, retr_singgaus, retr_singking
+from tdpy import retr_doubgaus, retr_doubking, retr_gausking, retr_singgaus, retr_singking, retr_xposypos
 from tdpy import summgene
 import chalcedon
 
@@ -42,14 +42,6 @@ def retr_psfnwdth( \
             wdth[i, m] = wdthtemp
                         
     return wdth
-
-
-def retr_xposypos(gang, aang):
-    
-    xpos = gang * np.cos(aang)
-    ypos = gang * np.sin(aang)
-
-    return xpos, ypos
 
 
 def retr_gang(xpos, ypos):
