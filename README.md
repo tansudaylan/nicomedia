@@ -1,6 +1,6 @@
 # Nicomedia
 
-Nicomedia is a compatibility-layer numerical package for astrophysical routines. It provides utility functions and profile kernels that overlap with the shared functionality in `tdpy`, but it is intentionally treated as a thin compatibility surface rather than as a second source of truth for new numerical implementations.
+Nicomedia is a library for astrophysical routines. It provides utility functions and profile kernels that overlap with the shared functionality in `tdpy`, but it is intentionally treated as a thin compatibility surface rather than as a second source of truth for new numerical implementations.
 
 ## Scientific purpose
 
