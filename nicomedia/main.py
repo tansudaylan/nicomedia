@@ -8,11 +8,7 @@ import astroquery
 import scipy
 
 import tdpy
-from tdpy import retr_singgaus as retr_singgaus_tdpy
-from tdpy import retr_singking as retr_singking_tdpy
-from tdpy import retr_doubgaus as retr_doubgaus_tdpy
-from tdpy import retr_gausking as retr_gausking_tdpy
-from tdpy import retr_doubking as retr_doubking_tdpy
+from tdpy import retr_doubgaus, retr_doubking, retr_gausking, retr_singgaus, retr_singking
 from tdpy import summgene
 import chalcedon
 
@@ -46,26 +42,6 @@ def retr_psfnwdth( \
             wdth[i, m] = wdthtemp
                         
     return wdth
-
-
-def retr_singgaus(scaldevi, sigc):
-    return retr_singgaus_tdpy(scaldevi, sigc)
-
-
-def retr_singking(scaldevi, sigc, gamc):
-    return retr_singking_tdpy(scaldevi, sigc, gamc)
-
-
-def retr_doubgaus(scaldevi, frac, sigc, sigt):
-    return retr_doubgaus_tdpy(scaldevi, frac, sigc, sigt)
-
-
-def retr_gausking(scaldevi, frac, sigc, sigt, gamt):
-    return retr_gausking_tdpy(scaldevi, frac, sigc, sigt, gamt)
-
-
-def retr_doubking(scaldevi, frac, sigc, gamc, sigt, gamt):
-    return retr_doubking_tdpy(scaldevi, frac, sigc, gamc, sigt, gamt)
 
 
 def retr_xposypos(gang, aang):
@@ -1538,17 +1514,23 @@ def retr_tmptplandayynigh(tmptirra, epsi):
 
 
 def retr_esmm(tmptplanequi, tmptstar, radicomp, radistar, kmag):
-    
-    tmptplanirra = tmptplanequi
+
+    tmptplanirra = tmptplanequi * np.sqrt(2.)
     tmptplandayy, tmptplannigh = retr_tmptplandayynigh(tmptplanirra, 0.1)
-    esmm = 1.1e3 * retr_fluxspecbbodwlen(tmptplandayy, 7.5) / retr_fluxspecbbodwlen(tmptstar, 7.5) * (radicomp / radistar)*2 * 10**(-kmag / 5.)
+    ratiradi = radicomp / radistar / tdpy.retr_factconv()['rsre']
+    esmm = 1.1e3 * retr_fluxspecbbodwlen(tmptplandayy, 7.5) / retr_fluxspecbbodwlen(tmptstar, 7.5) * ratiradi**2 * 10**(-kmag / 5.)
 
     return esmm
 
 
 def retr_tsmm(radicomp, tmptplan, massplan, radistar, jmag):
-    
-    tsmm = 1.53 / 1.2 * radicomp**3 * tmptplan / massplan / radistar**2 * 10**(-jmag / 5.)
+
+    coefscal = np.select(
+        [radicomp < 1.5, radicomp < 2.75, radicomp < 4., radicomp <= 10.],
+        [0.190, 1.26, 1.28, 1.15],
+        default=np.nan,
+    )
+    tsmm = coefscal * radicomp**3 * tmptplan / massplan / radistar**2 * 10**(-jmag / 5.)
     
     return tsmm
 
@@ -1884,7 +1866,7 @@ def retr_dictexar( \
         dictexar['lumibbodbolohost'] = retr_fluxbolobbod(dictexar['tmptstar'], dictexar['radistar'])
         
         # X-ray flux of the host star
-        dictxraystar = retr_dictxraystar(dictexar['tmptstar'], dictexar['radistar'])
+        dictxraystar = retr_dictxraystar(dictexar['tmptstar'], dictexar['radistar'], dictexar['distsyst'])
         dictexar['fracxrayboloaddihost'] = dictxraystar['fracxrayboloaddi']
         dictexar['fluxbbod0224host'] = dictxraystar['fluxbbod0224']
         dictexar['lumibbod0224host'] = dictxraystar['lumibbod0224']
@@ -1943,7 +1925,7 @@ def retr_dictexar( \
     return dictexar
 
 
-def retr_dictxraystar(tmptstar, radistar):
+def retr_dictxraystar(tmptstar, radistar, diststar):
     '''
     Return a dictionary with predicted X-ray-related properties of stars 
     '''
@@ -1976,10 +1958,10 @@ def retr_dictxraystar(tmptstar, radistar):
         fluxspecbbod = retr_fluxspecbbodener(tmptstar[0][k], blimener) # ergs/s/cm^2/eV
 
         # Sun: 1e27 erg/s, Capella: 1e31 erg/s
-        dictxraystar['fluxbbod0224'][0][k] = np.trapz(fluxspecbbod * functran, x=blimener)
+        dictxraystar['fluxbbod0224'][0][k] = np.trapezoid(fluxspecbbod * functran, x=blimener)
         
         fluxspecbbodtest = retr_fluxspecbbodener(tmptstar[0][k], blimenerbolo) # ergs/s/cm^2/eV
-        dictxraystar['lumibbodbolotest'][0][k] = np.trapz(fluxspecbbodtest, x=blimenerbolo)
+        dictxraystar['lumibbodbolotest'][0][k] = np.trapezoid(fluxspecbbodtest, x=blimenerbolo)
         if False and abs(fluxbbodbolotest - dictxraystar['lumibbodbolo'][0][k]) / dictxraystar['lumibbodbolo'][0][k] > 0.01:
             print('')
             print('')
@@ -2004,7 +1986,10 @@ def retr_dictxraystar(tmptstar, radistar):
     dictxraystar['lumipred0224'][0] = dictxraystar['lumibbod0224'][0] + dictxraystar['fracxrayboloaddi'][0] * dictxraystar['lumibbodbolo'][0]
     dictxraystar['lumipred0224'][1] = 'ergs s$^{-1}$'
     
-    dictxraystar['fluxpred0224'][0] = dictxraystar['lumipred0224'][0] / 4. / np.pi / (radistar[0] * dictfact['pccm'])**2
+    if diststar is None:
+        dictxraystar['fluxpred0224'][0] = np.full(numbstar, np.nan)
+    else:
+        dictxraystar['fluxpred0224'][0] = dictxraystar['lumipred0224'][0] / 4. / np.pi / (diststar[0] * dictfact['pccm'])**2
     dictxraystar['fluxpred0224'][1] = 'ergs s$^{-1}$cm$^{-2}$'
 
     return dictxraystar
@@ -2078,7 +2063,12 @@ def retr_fluxspecbbod(tmpt, xdat=None, typeband=None, typexdat=None):
     # 1 electronvolt (eV) == 1.24 microns
     #print('temp: need to check the fudge factor here to go from temperature to W/m^2')
         # M3 star, 3500 K, (FX=8.4e-17erg/s/cm2 ; 0.2-2.4keV) at a distance of 2.5 kpc
-    fluxspec = retr_fluxspecbbodener(tmpt, xdat)
+    if typexdat == 'evol':
+        fluxspec = retr_fluxspecbbodener(tmpt, xdat)
+    elif typexdat == 'wlen':
+        fluxspec = retr_fluxspecbbodwlen(tmpt, xdat)
+    else:
+        raise ValueError('typexdat must be evol or wlen.')
 
     if typeband is not None:
         return fluxspec, xdat
@@ -2087,17 +2077,25 @@ def retr_fluxspecbbod(tmpt, xdat=None, typeband=None, typexdat=None):
 
 
 def retr_fluxspecbbodener(tmpt, ener):
-    
-    # Boltzmann constant is 8.617×10^-5 J / K
-    spec = 1.4e30 * ener**3 / (np.exp(ener / (8.617e-5 * tmpt)) - 1.) # [erg/m^2/s/eV]
+
+    planck = 6.62607015e-34 # [J s]
+    clght = 299792458. # [m / s]
+    boltz = 1.380649e-23 # [J / K]
+    enerjoule = np.asarray(ener) * 1.602176634e-19 # [J]
+    spec = 2. * np.pi * enerjoule**3 / planck**3 / clght**2 / np.expm1(enerjoule / boltz / tmpt)
+    spec *= 1.602176634e-16 # [erg / s / cm^2 / eV]
 
     return spec
 
 
 def retr_fluxspecbbodwlen(tmpt, wlen):
-    
-    # 1 erg = 1e-7 J
-    fluxspec = 1e40 / wlen**5 / (np.exp(1.4388e4 / (wlen * tmpt)) - 1.) # [W/m^2/s/nm]
+
+    planck = 6.62607015e-34 # [J s]
+    clght = 299792458. # [m / s]
+    boltz = 1.380649e-23 # [J / K]
+    wlenmetr = np.asarray(wlen) * 1e-6 # [m]
+    fluxspec = 2. * np.pi * planck * clght**2 / wlenmetr**5 / np.expm1(planck * clght / wlenmetr / boltz / tmpt)
+    fluxspec *= 1e-3 # [erg / s / cm^2 / micron]
 
     return fluxspec
 
@@ -2264,15 +2262,32 @@ def retr_rvel( \
     Calculate the time-series of radial velocity (RV) of a two-body system.
     '''
     
-    # phase
-    phas = (time - epocmtracomp) / pericomp
-    phas = phas % 1.
+    arparadi = np.deg2rad(arpacomp)
+    anomtran = np.pi / 2. - arparadi
+    anomecctran = 2. * np.arctan2(
+        np.sqrt(1. - eccecomp) * np.sin(anomtran / 2.),
+        np.sqrt(1. + eccecomp) * np.cos(anomtran / 2.),
+    )
+    anommeantran = anomecctran - eccecomp * np.sin(anomecctran)
+    anommean = anommeantran + 2. * np.pi * (np.asarray(time) - epocmtracomp) / pericomp
+    anomecce = anommean + eccecomp * np.sin(anommean)
+    for _ in range(100):
+        residual = anomecce - eccecomp * np.sin(anomecce) - anommean
+        anomecce -= residual / (1. - eccecomp * np.cos(anomecce))
+        if np.all(np.abs(residual) < 1e-12):
+            break
+    else:
+        raise RuntimeError('Kepler solver did not converge.')
+    anomtrue = 2. * np.arctan2(
+        np.sqrt(1. + eccecomp) * np.sin(anomecce / 2.),
+        np.sqrt(1. - eccecomp) * np.cos(anomecce / 2.),
+    )
     
     # radial velocity (RV) semi-amplitude
     rvelsema = retr_rvelsema(pericomp, massstar, masscomp, inclcomp, eccecomp)
     
     # radial velocity time-series
-    rvel = rvelsema * (np.cos(np.pi * arpacomp / 180. + 2. * np.pi * phas) + eccecomp * np.cos(np.pi * arpacomp / 180.))
+    rvel = rvelsema * (np.cos(arparadi + anomtrue) + eccecomp * np.cos(arparadi))
 
     return rvel
 
@@ -2309,10 +2324,14 @@ def retr_rvelsema( \
     Calculate the semi-amplitude of radial velocity (RV) of a two-body system.
     '''
     
-    dictfact = tdpy.retr_factconv()
-    
-    rvelsema = 203. * pericomp**(-1. / 3.) * masscomp * np.sin(inclcomp / 180. * np.pi) / \
-                                                    (masscomp + massstar * dictfact['msme'])**(2. / 3.) / np.sqrt(1. - eccecomp**2) # [m/s]
+    grav = 6.67430e-11 # [m^3 / kg / s^2]
+    masssolr = 1.98847e30 # [kg]
+    dayy = 86400. # [s]
+    peri = np.asarray(pericomp) * dayy # [s]
+    massstar = np.asarray(massstar) * masssolr # [kg]
+    masscomp = np.asarray(masscomp) * masssolr # [kg]
+    rvelsema = (2. * np.pi * grav / peri)**(1. / 3.) * masscomp * np.sin(np.deg2rad(inclcomp)) / \
+               (massstar + masscomp)**(2. / 3.) / np.sqrt(1. - eccecomp**2) # [m / s]
 
     return rvelsema
 
@@ -2329,7 +2348,9 @@ def retr_brgtlmdk(cosg, coeflmdk, brgtraww=None, typelmdk='quad'):
         factlmdk = 1. - coeflmdk[0] * (1. - cosg) - coeflmdk[1] * (1. - cosg)**2
     
     if typelmdk == 'nlin':
-        factlmdk = 1. - coeflmdk[0] * (1. - cosg) - coeflmdk[1] * (1. - cosg)**2
+        if len(coeflmdk) != 3:
+            raise ValueError('The nlin limb-darkening law requires three coefficients.')
+        factlmdk = 1. - coeflmdk[0] * (1. - cosg**0.5) - coeflmdk[1] * (1. - cosg) - coeflmdk[2] * (1. - cosg**1.5)
     
     if typelmdk == 'none':
         factlmdk = np.ones_like(cosg)
@@ -3558,7 +3579,7 @@ def retr_lcurmodl_flarsing(meantime, timeflar, amplflar, scalrise, scalfall):
 
 def retr_imfa(cosi, rs2a, ecce, sinw):
     
-    imfa = cosi / rs2a * (1. - ecce)**2 / (1. + ecce * sinw)
+    imfa = cosi / rs2a * (1. - ecce**2) / (1. + ecce * sinw)
 
     return imfa
 
