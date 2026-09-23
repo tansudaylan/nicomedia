@@ -21,7 +21,10 @@ This repository is best treated as a compatibility wrapper around the canonical 
 ```bash
 cd nicomedia
 python -m pip install -e .
+export NICOMEDIA_PATH=/path/to/nicomedia
 ```
+
+`NICOMEDIA_PATH` identifies the repository root. Keep runtime inputs in `data/` and generated pipeline outputs in `visuals/`; both directories are ignored by Git.
 
 ## Minimal workflow
 
