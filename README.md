@@ -28,13 +28,15 @@ export NICOMEDIA_PATH=/path/to/nicomedia
 
 ## Minimal workflow
 
-A minimal import smoke test is the intended standard entry point for the package:
+A runnable compatibility example evaluates the same analytic double-King profile through Nicomedia and TDpy:
 
-```python
-import nicomedia
-print(hasattr(nicomedia, '__file__'))
-print(hasattr(nicomedia, 'retr_doubking'))
+```bash
+python examples/double_king_compatibility.py --typefileplot png
 ```
+
+![Nicomedia and TDpy double-King profile compatibility](examples/double_king_compatibility.png)
+
+The upper panel shows the shared analytic profile for explicit kernel parameters. The lower panel shows the absolute numerical difference. It is exactly zero, demonstrating that Nicomedia preserves the TDpy implementation rather than maintaining a redundant kernel.
 
 ## Dependencies
 
