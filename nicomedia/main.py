@@ -10,6 +10,7 @@ import scipy
 import tdpy
 from tdpy import retr_doubgaus, retr_doubking, retr_gausking, retr_singgaus, retr_singking, retr_xposypos
 from tdpy import summgene
+from tdpy.population import subset_population
 import chalcedon
 
 
@@ -2444,38 +2445,15 @@ def retr_subp(dictpopl, dictnumbsamp, dictindxsamp, namepoplinit, namepoplfinl, 
         raise Exception('')
 
     if len(indx) == 0:
-        indx = np.array([], dtype=int)
-
-    if indx.size == 0:
         print('Warning! indx is zero.')
-
-    dictpopl[namepoplfinl] = dict()
-    for name in dictpopl[namepoplinit].keys():
-        dictpopl[namepoplfinl][name] = [[], []]
-        
-        if np.isscalar(dictpopl[namepoplinit][name][0]):
-            print('')
-            print('')
-            print('')
-            print('name')
-            print(name)
-            print('indx')
-            print(indx)
-            print('dictpopl[namepoplinit][name]')
-            print(dictpopl[namepoplinit][name])
-            raise Exception('np.isscalar(dictpopl[namepoplinit][name][0])')
-        
-        # copy the subset of the array
-        if indx.size > 0:
-            dictpopl[namepoplfinl][name][0] = dictpopl[namepoplinit][name][0][indx]
-        else:
-            dictpopl[namepoplfinl][name][0] = np.array([])
-
-        # copy the unit
-        dictpopl[namepoplfinl][name][1] =  dictpopl[namepoplinit][name][1]
-    
-    dictindxsamp[namepoplinit][namepoplfinl] = indx
-    dictnumbsamp[namepoplfinl] = indx.size
+    subset_population(
+        dictpopl,
+        namepoplinit,
+        namepoplfinl,
+        indx,
+        dictnumbsamp,
+        dictindxsamp,
+    )
     dictindxsamp[namepoplfinl] = dict()
 
 
