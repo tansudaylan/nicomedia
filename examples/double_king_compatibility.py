@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Compare Nicomedia's compatibility API with TDpy's canonical profile."""
 
-import argparse
 from pathlib import Path
 
 import matplotlib
@@ -13,6 +12,7 @@ import numpy as np
 
 import nicomedia
 import tdpy
+from tdpy.cli import parse_plot_arguments
 
 
 def evaluate_profiles() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -103,16 +103,10 @@ def run_example(output_path: Path) -> float:
     return float(absolute_difference.max())
 
 
-def parse_arguments() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
+def parse_arguments():
+    return parse_plot_arguments(
         description="Plot Nicomedia and TDpy double-King profile compatibility."
     )
-    parser.add_argument(
-        "--typefileplot",
-        choices=("png", "pdf"),
-        default="png",
-    )
-    return parser.parse_args()
 
 
 def main() -> int:
