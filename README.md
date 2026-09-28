@@ -1,6 +1,6 @@
 # Nicomedia
 
-Nicomedia provides utility functions and analytic profile kernels for astrophysical imaging and catalog modeling. Users can evaluate King-like and Gaussian point-spread profiles through a stable interface and apply them to scalar or array-valued coordinates.
+Nicomedia evaluates King-like and Gaussian point-spread profiles for astrophysical imaging and catalog models at scalar or array-valued coordinates.
 
 ## Installation
 
@@ -12,18 +12,18 @@ export NICOMEDIA_PATH=/path/to/nicomedia
 
 `NICOMEDIA_PATH` identifies the repository root. Keep runtime inputs in `data/` and generated pipeline outputs in `visuals/`; both directories are ignored by Git.
 
-## Minimal workflow
+## Double-King profile
 
-A runnable compatibility example evaluates the same analytic double-King profile through Nicomedia and TDpy:
+The example evaluates a double-King point-spread profile with explicit core and wing parameters:
 
 ```bash
 python examples/double_king_compatibility.py --typefileplot png
 ```
 
-![Nicomedia and TDpy double-King profile compatibility](examples/double_king_compatibility.png)
+![Nicomedia double-King point-spread profile](examples/double_king_compatibility.png)
 
-The upper panel shows the shared analytic profile for explicit kernel parameters. The lower panel shows the absolute numerical difference. It is exactly zero, demonstrating that Nicomedia preserves the TDpy implementation rather than maintaining a redundant kernel.
+The upper panel shows the radial decline of the analytic profile. The lower panel confirms numerical agreement between the Nicomedia and TDpy evaluations across the plotted radii.
 
 ## Dependencies
 
-Nicomedia uses NumPy for array calculations and TDpy for tested numerical and plotting utilities.
+Nicomedia uses NumPy for array calculations and TDpy for numerical and plotting operations.
