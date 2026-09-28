@@ -1,6 +1,6 @@
 # Nicomedia
 
-Nicomedia provides utility functions and profile kernels for astrophysical imaging and catalog-modeling workflows, including King-like and Gaussian-style kernels. Shared numerical implementations are provided by `tdpy` where available.
+Nicomedia provides utility functions and analytic profile kernels for astrophysical imaging and catalog modeling. Users can evaluate King-like and Gaussian point-spread profiles through a stable interface and apply them to scalar or array-valued coordinates.
 
 ## Installation
 
@@ -26,4 +26,4 @@ The upper panel shows the shared analytic profile for explicit kernel parameters
 
 ## Dependencies
 
-The package sits on the standard scientific stack and relies primarily on the shared ecosystem utilities provided by `tdpy`.
+Nicomedia uses NumPy for array calculations and TDpy for tested numerical and plotting utilities.
