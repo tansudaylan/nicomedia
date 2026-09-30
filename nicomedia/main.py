@@ -1,7 +1,8 @@
+from tdpy.verbosity import print
 import os, sys, json
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
+from tdpy.verbosity import tqdm
 
 import astropy
 import astroquery

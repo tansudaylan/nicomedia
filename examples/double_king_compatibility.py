@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Compare Nicomedia's compatibility API with TDpy's canonical profile."""
 
+from tdpy.verbosity import print
+
 from pathlib import Path
 
 import matplotlib

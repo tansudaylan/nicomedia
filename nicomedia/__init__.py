@@ -8,10 +8,13 @@ should be added in tdpy unless there is a strong repository-specific reason.
 
 import warnings
 
-warnings.warn(
-    'nicomedia is a compatibility helper layer; the canonical numerical implementations should live in tdpy and new scientific code should be added there unless there is a compelling repository-specific reason.',
-    stacklevel=2,
-)
+from tdpy.verbosity import retr_boolverb
+
+if retr_boolverb():
+    warnings.warn(
+        'nicomedia is a compatibility helper layer; the canonical numerical implementations should live in tdpy and new scientific code should be added there unless there is a compelling repository-specific reason.',
+        stacklevel=2,
+    )
 
 from .main import *
 from .paths import get_data_path, get_repository_path, get_visuals_path
