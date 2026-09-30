@@ -10,6 +10,11 @@ import scipy
 import tdpy
 from tdpy import retr_doubgaus, retr_doubking, retr_gausking, retr_singgaus, retr_singking, retr_xposypos
 from tdpy import summgene
+from tdpy.exoplanet import (
+    kipping_to_quadratic_limb_darkening,
+    quadratic_limb_darkening,
+    quadratic_to_kipping_limb_darkening,
+)
 from tdpy.population import subset_population
 import chalcedon
 
@@ -2247,19 +2252,11 @@ def retr_rvel( \
 
 
 def retr_coeflmdkkipp(u1, u2):
-    
-    q1 = (u1 + u2)**2
-    q2 = u1 / 2. / (u1 + u2)
-    
-    return q1, q2
+    return quadratic_to_kipping_limb_darkening(u1, u2)
 
 
 def retr_coeflmdkfromkipp(q1, q2):
-    
-    u1 = 2 * np.sqrt(q1) * q2
-    u2 = np.sqrt(q1) * (1. - 2. * q2)
-
-    return u1, u2
+    return kipping_to_quadratic_limb_darkening(q1, q2)
 
 
 def retr_rvelsema( \
@@ -2299,7 +2296,7 @@ def retr_brgtlmdk(cosg, coeflmdk, brgtraww=None, typelmdk='quad'):
         factlmdk = 1. - coeflmdk[0] * (1. - cosg)
     
     if typelmdk == 'quad' or typelmdk == 'quadkipp':
-        factlmdk = 1. - coeflmdk[0] * (1. - cosg) - coeflmdk[1] * (1. - cosg)**2
+        factlmdk = quadratic_limb_darkening(cosg, coeflmdk)
     
     if typelmdk == 'nlin':
         if len(coeflmdk) != 3:
