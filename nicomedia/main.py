@@ -11,6 +11,7 @@ import tdpy
 from tdpy import retr_doubgaus, retr_doubking, retr_gausking, retr_singgaus, retr_singking, retr_xposypos
 from tdpy import summgene
 from tdpy.exoplanet import (
+    keplerian_radial_velocity,
     kipping_to_quadratic_limb_darkening,
     quadratic_limb_darkening,
     quadratic_to_kipping_limb_darkening,
@@ -2227,28 +2228,13 @@ def retr_rvel( \
         np.sqrt(1. - eccecomp) * np.sin(anomtran / 2.),
         np.sqrt(1. + eccecomp) * np.cos(anomtran / 2.),
     )
+    # mean anomaly at mid-transit, which sets the orbital phase at the reference time
     anommeantran = anomecctran - eccecomp * np.sin(anomecctran)
-    anommean = anommeantran + 2. * np.pi * (np.asarray(time) - epocmtracomp) / pericomp
-    anomecce = anommean + eccecomp * np.sin(anommean)
-    for _ in range(100):
-        residual = anomecce - eccecomp * np.sin(anomecce) - anommean
-        anomecce -= residual / (1. - eccecomp * np.cos(anomecce))
-        if np.all(np.abs(residual) < 1e-12):
-            break
-    else:
-        raise RuntimeError('Kepler solver did not converge.')
-    anomtrue = 2. * np.arctan2(
-        np.sqrt(1. + eccecomp) * np.sin(anomecce / 2.),
-        np.sqrt(1. - eccecomp) * np.cos(anomecce / 2.),
-    )
     
     # radial velocity (RV) semi-amplitude
     rvelsema = retr_rvelsema(pericomp, massstar, masscomp, inclcomp, eccecomp)
     
-    # radial velocity time-series
-    rvel = rvelsema * (np.cos(arparadi + anomtrue) + eccecomp * np.cos(arparadi))
-
-    return rvel
+    return keplerian_radial_velocity(time, pericomp, rvelsema, eccecomp, arparadi, anommeantran, epocmtracomp)
 
 
 def retr_coeflmdkkipp(u1, u2):
