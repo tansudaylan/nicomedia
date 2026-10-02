@@ -1296,10 +1296,14 @@ def calc_tsmmesmm(dictpopl, strgelem='comp', boolsamp=False):
         #    print('listesmm[:, n]')
         #    summgene(listesmm[:, n])
         #    raise Exception('')
-    tdpy.setp_dict(dictpopl, 'tsmm', np.nanmedian(listtsmm, 0))
-    tdpy.setp_dict(dictpopl, 'stdvtsmm', np.nanstd(listtsmm, 0))
-    tdpy.setp_dict(dictpopl, 'esmm', np.nanmedian(listesmm, 0))
-    tdpy.setp_dict(dictpopl, 'stdvesmm', np.nanstd(listesmm, 0))
+    for name, samples in [('tsmm', listtsmm), ('esmm', listesmm)]:
+        valid = np.isfinite(samples).any(axis=0)
+        median = np.full(numbcomp, np.nan)
+        stdv = np.full(numbcomp, np.nan)
+        median[valid] = np.nanmedian(samples[:, valid], axis=0)
+        stdv[valid] = np.nanstd(samples[:, valid], axis=0)
+        tdpy.setp_dict(dictpopl, name, median)
+        tdpy.setp_dict(dictpopl, 'stdv' + name, stdv)
     
     #print('listesmm')
     #summgene(listesmm)
