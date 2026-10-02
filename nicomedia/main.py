@@ -72,101 +72,172 @@ def retr_aang(xpos, ypos):
     return aang
 
 
-def retr_psfn(dictpara, indxenertemp, arryangl, typemodlpsfn, typenormangl='none', booldiag=True):
-    '''
-    Compute the PSF profile
-    '''
-    
+def retr_psfn(
+    dictpara,
+    indxenertemp,
+    arryangl,
+    typemodlpsfn,
+    typenormangl='none',
+    booldiag=True,
+    *,
+    psfp=None,
+    indxpsfpinit=None,
+    fermscalfact=None,
+):
+    """Evaluate a supported PSF profile from explicit model parameters."""
+    angle = np.asarray(arryangl, dtype=float)
+    if angle.ndim != 1:
+        raise ValueError('arryangl must be one-dimensional.')
+    if typenormangl not in ('none', 'ferm'):
+        raise ValueError("typenormangl must be 'none' or 'ferm'.")
+
     if typenormangl == 'ferm':
-        scalangl = 2. * np.arcsin(np.sqrt(2. - 2. * np.cos(arryangl)) / 2.)[None, :, None] / fermscalfact[:, None, :]
-        scalanglnorm = 2. * np.arcsin(np.sqrt(2. - 2. * np.cos(arryangl)) / 2.)[None, :, None] / fermscalfact[:, None, :]
+        if fermscalfact is None:
+            raise ValueError("fermscalfact is required for typenormangl='ferm'.")
+        scale = np.asarray(fermscalfact, dtype=float)
+        if not np.isfinite(scale).all() or np.any(scale <= 0.0):
+            raise ValueError('fermscalfact must contain finite positive values.')
+        angle = 2.0 * np.arcsin(np.sqrt(2.0 - 2.0 * np.cos(angle)) / 2.0)
+        angle_scale = angle[None, :, None] / scale[:, None, :]
     else:
-        scalangl = arryangl[None, :, None]
-    
-    if booldiag:
-        if dictpara['sigc'] == 0:
-            raise Exception('')
+        angle_scale = angle[None, :, None]
 
-    if typemodlpsfn == 'singgaus':
-        psfn = retr_singgaus(scalangl, dictpara['sigc'])
-    
-    elif typemodlpsfn == 'singking':
-        sigc = psfp[indxpsfpinit]
-        gamc = psfp[indxpsfpinit+1]
-        sigc = sigc[:, None, :]
-        gamc = gamc[:, None, :]
-        psfn = retr_singking(scalangl, sigc, gamc)
-    
-    elif typemodlpsfn == 'doubking':
-        sigc = psfp[indxpsfpinit]
-        gamc = psfp[indxpsfpinit+1]
-        sigt = psfp[indxpsfpinit+2]
-        gamt = psfp[indxpsfpinit+3]
-        frac = psfp[indxpsfpinit+4]
-        sigc = sigc[:, None, :]
-        gamc = gamc[:, None, :]
-        sigt = sigt[:, None, :]
-        gamt = gamt[:, None, :]
-        frac = frac[:, None, :]
-        psfn = retr_doubking(scalangl, frac, sigc, gamc, sigt, gamt)
-        if typenormangl == 'ferm':
-            psfnnorm = retr_doubking(scalanglnorm, frac, sigc, gamc, sigt, gamt)
-    else:
-        raise Exception('')
+    def shape_parameters(number):
+        if psfp is None or indxpsfpinit is None:
+            raise ValueError('psfp and indxpsfpinit are required for King PSFs.')
+        values = np.asarray(psfp[indxpsfpinit:indxpsfpinit + number], dtype=float)
+        if values.ndim != 3 or values.shape[0] != number:
+            raise ValueError('psfp must have shape (parameters, energy, event class).')
+        return [values[index, :, None, :] for index in range(number)]
 
-    # normalize the PSF
+    def evaluate(profile_angle):
+        if typemodlpsfn == 'singgaus':
+            if 'sigc' not in dictpara:
+                raise ValueError("dictpara['sigc'] is required for a Gaussian PSF.")
+            sigma = np.asarray(dictpara['sigc'], dtype=float)
+            if booldiag and (not np.isfinite(sigma).all() or np.any(sigma == 0.0)):
+                raise ValueError('Gaussian PSF width must be finite and nonzero.')
+            return retr_singgaus(profile_angle, sigma)
+        if typemodlpsfn == 'singking':
+            sigma_core, gamma_core = shape_parameters(2)
+            return retr_singking(profile_angle, sigma_core, gamma_core)
+        if typemodlpsfn == 'doubking':
+            sigma_core, gamma_core, sigma_tail, gamma_tail, fraction = shape_parameters(5)
+            return retr_doubking(
+                profile_angle, fraction, sigma_core, gamma_core, sigma_tail, gamma_tail
+            )
+        raise ValueError('Unsupported PSF model %r.' % typemodlpsfn)
+
+    profile = evaluate(angle_scale)
     if typenormangl == 'ferm':
-        fact = 2. * np.pi * np.trapz(psfnnorm * np.sin(arryangl[None, :, None]), arryangl, axis=1)[:, None, :]
-        psfn /= fact
-
-    return psfn
+        normalization = 2.0 * np.pi * np.trapz(
+            profile * np.sin(angle[None, :, None]), angle, axis=1
+        )[:, None, :]
+        profile = profile / normalization
+    return profile
 
 
 # photometry related
 
 ### find the spectra of sources
-def retr_spec(gdat, flux, sind=None, curv=None, expc=None, sindcolr=None, elin=None, edisintp=None, sigm=None, gamm=None, spectype='powr', plot=False):
-    
+def retr_spec(
+    gdat,
+    flux,
+    sind=None,
+    curv=None,
+    expc=None,
+    sindcolr=None,
+    elin=None,
+    edisintp=None,
+    sigm=None,
+    gamm=None,
+    spectype='powr',
+    plot=False,
+    frac=None,
+):
+    """Evaluate one spectrum using the requested profile and explicit parameters."""
+    flux = np.atleast_1d(np.asarray(flux, dtype=float))
     if gdat.numbener == 1:
-        spec = flux[None, :]
-    else:
-        if plot:
-            meanener = gdat.bctrpara.enerplot
-        else:
-            meanener = gdat.bctrpara.ener
+        return flux[None, :]
 
-        if gmod.spectype == 'gaus':
-            spec = 1. / edis[None, :] / np.sqrt(2. * pi) * flux[None, :] * np.exp(-0.5 * ((gdat.bctrpara.ener[:, None] - elin[None, :]) / edis[None, :])**2)
-        if gmod.spectype == 'voig':
-            args = (gdat.bctrpara.ener[:, None] + 1j * gamm[None, :]) / np.sqrt(2.) / sigm[None, :]
-            spec = 1. / sigm[None, :] / np.sqrt(2. * pi) * flux[None, :] * real(scipy.special.wofz(args))
-        if gmod.spectype == 'edis':
-            edis = edisintp(elin)[None, :]
-            spec = 1. / edis / np.sqrt(2. * pi) * flux[None, :] * np.exp(-0.5 * ((gdat.bctrpara.ener[:, None] - elin[None, :]) / edis)**2)
-        if gmod.spectype == 'pvoi':
-            spec = 1. / edis / np.sqrt(2. * pi) * flux[None, :] * np.exp(-0.5 * ((gdat.bctrpara.ener[:, None] - elin[None, :]) / edis)**2)
-        if gmod.spectype == 'lore':
-            spec = 1. / edis / np.sqrt(2. * pi) * flux[None, :] * np.exp(-0.5 * ((gdat.bctrpara.ener[:, None] - elin[None, :]) / edis)**2)
-        if gmod.spectype == 'powr':
-            spec = flux[None, :] * (meanener / gdat.enerpivt)[:, None]**(-sind[None, :])
-        if gmod.spectype == 'colr':
-            if plot:
-                spec = np.zeros((gdat.numbenerplot, flux.size))
+    meanener = np.asarray(
+        gdat.bctrpara.enerplot if plot else gdat.bctrpara.ener,
+        dtype=float,
+    )
+    if spectype in ('gaus', 'voig', 'edis', 'pvoi', 'lore'):
+        if elin is None:
+            raise ValueError('elin is required for line spectra.')
+        elin = np.atleast_1d(np.asarray(elin, dtype=float))
+        if elin.size != flux.size:
+            raise ValueError('elin must contain one center per flux value.')
+        offset = meanener[:, None] - elin[None, :]
+
+        def line_width(value, name):
+            if value is None:
+                raise ValueError('%s is required for spectype=%r.' % (name, spectype))
+            width = np.atleast_1d(np.asarray(value, dtype=float))
+            if width.size == 1 and flux.size > 1:
+                width = np.full(flux.size, width.item())
+            if width.size != flux.size or not np.isfinite(width).all() or np.any(width <= 0.0):
+                raise ValueError('%s must contain finite positive values, one per line.' % name)
+            return width[None, :]
+
+        if spectype == 'edis':
+            if edisintp is None:
+                raise ValueError('edisintp is required for spectype=\'edis\'.')
+            sigma = line_width(edisintp(elin), 'edisintp(elin)')
+        elif spectype in ('gaus', 'voig', 'pvoi'):
+            sigma = line_width(sigm, 'sigm')
+
+        if spectype in ('lore', 'voig', 'pvoi'):
+            gamma = line_width(gamm, 'gamm')
+
+        gaussian = np.exp(-0.5 * (offset / sigma) ** 2) / (sigma * np.sqrt(2.0 * np.pi)) \
+            if spectype != 'lore' else None
+        if spectype in ('gaus', 'edis'):
+            profile = gaussian
+        elif spectype == 'lore':
+            profile = gamma / (np.pi * (offset**2 + gamma**2))
+        elif spectype == 'voig':
+            args = (offset + 1j * gamma) / (np.sqrt(2.0) * sigma)
+            profile = np.real(scipy.special.wofz(args)) / (sigma * np.sqrt(2.0 * np.pi))
+        else:
+            if frac is None:
+                raise ValueError('frac is required for spectype=\'pvoi\'.')
+            fraction = np.atleast_1d(np.asarray(frac, dtype=float))
+            if fraction.size == 1 and flux.size > 1:
+                fraction = np.full(flux.size, fraction.item())
+            if fraction.size != flux.size or not np.isfinite(fraction).all() \
+                    or np.any((fraction < 0.0) | (fraction > 1.0)):
+                raise ValueError('frac must contain values between zero and one, one per line.')
+            lorentzian = gamma / (np.pi * (offset**2 + gamma**2))
+            profile = (1.0 - fraction[None, :]) * gaussian + fraction[None, :] * lorentzian
+        return flux[None, :] * profile
+
+    if spectype == 'powr':
+        return flux[None, :] * (meanener / gdat.enerpivt)[:, None] ** (-np.asarray(sind)[None, :])
+    if spectype == 'colr':
+        if plot:
+            return np.zeros((meanener.size, flux.size))
+        if sindcolr is None:
+            raise ValueError('sindcolr is required for spectype=\'colr\'.')
+        spectrum = np.empty((gdat.numbener, flux.size))
+        for index in gdat.indxener:
+            if index < gdat.indxenerpivt:
+                spectrum[index] = flux * (gdat.bctrpara.ener[index] / gdat.enerpivt) ** (-sindcolr[index])
+            elif index == gdat.indxenerpivt:
+                spectrum[index] = flux
             else:
-                spec = np.empty((gdat.numbener, flux.size))
-                for i in gdat.indxener:
-                    if i < gdat.indxenerpivt:
-                        spec[i, :] = flux * (gdat.bctrpara.ener[i] / gdat.enerpivt)**(-sindcolr[i])
-                    elif i == gdat.indxenerpivt:
-                        spec[i, :] =  flux
-                    else:
-                        spec[i, :] = flux * (gdat.bctrpara.ener[i] / gdat.enerpivt)**(-sindcolr[i-1])
-        if gmod.spectype == 'curv':
-            spec = flux[None, :] * meanener[:, None]**(-sind[None, :] - gdat.factlogtenerpivt[:, None] * curv[None, :])
-        if gmod.spectype == 'expc':
-            spec = flux[None, :] * (meanener / gdat.enerpivt)[:, None]**(-sind[None, :]) * np.exp(-(meanener - gdat.enerpivt)[:, None] / expc[None, :])
-    
-    return spec
+                spectrum[index] = flux * (gdat.bctrpara.ener[index] / gdat.enerpivt) ** (-sindcolr[index - 1])
+        return spectrum
+    if spectype == 'curv':
+        return flux[None, :] * meanener[:, None] ** (
+            -np.asarray(sind)[None, :] - gdat.factlogtenerpivt[:, None] * np.asarray(curv)[None, :]
+        )
+    if spectype == 'expc':
+        return flux[None, :] * (meanener / gdat.enerpivt)[:, None] ** (-np.asarray(sind)[None, :]) \
+            * np.exp(-(meanener - gdat.enerpivt)[:, None] / np.asarray(expc)[None, :])
+    raise ValueError('Unsupported spectype %r.' % spectype)
 
 
 ### find the surface brightness due to one point source
