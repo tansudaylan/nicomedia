@@ -19,6 +19,12 @@ from tdpy.exoplanet import (
 )
 from tdpy.population import subset_population
 import chalcedon
+from tdpy.paths import RepositoryPaths
+from nicomedia.paths import get_visuals_path
+
+
+def _repository_data_path(repository, *parts):
+    return os.path.join(str(RepositoryPaths(repository + '_PATH').get_data_path()), *parts)
 
 
 def retr_psfnwdth( \
@@ -346,8 +352,8 @@ def retr_dictpopltic8( \
         numbtsec = len(listtsec)
         indxtsec = np.arange(numbtsec)
 
-    pathlistticidata = os.environ['EPHESOS_DATA_PATH'] + '/data/listticidata/'
-    os.system('mkdir -p %s' % pathlistticidata)
+    pathlistticidata = _repository_data_path('EPHESOS', 'listticidata') + os.sep
+    os.makedirs(pathlistticidata, exist_ok=True)
 
     path = pathlistticidata + 'listticidata_%s.csv' % typepopl
     if not os.path.exists(path):
@@ -387,7 +393,7 @@ def retr_dictpopltic8( \
             listtici = []
             for o in indxtsec:
                 if typepopl.endswith('bulk'):
-                    pathtess = os.environ['TESS_DATA_PATH'] + '/data/lcur/sector-%02d' % listtsec[o]
+                    pathtess = _repository_data_path('TESS', 'lcur', 'sector-%02d' % listtsec[o])
                     listnamefile = fnmatch.filter(os.listdir(pathtess), '*.fits')
                     listticitsec = []
                     for namefile in listnamefile:
@@ -865,7 +871,7 @@ def retr_dictpoplrvel():
     
     if typeverb > 0:
         print('Reading Sauls Gaia high RV catalog...')
-    path = os.environ['TROIA_DATA_PATH'] + '/data/Gaia_high_RV_errors.txt'
+    path = _repository_data_path('TROIA', 'Gaia_high_RV_errors.txt')
     for line in open(path):
         listnamesaul = line[:-1].split('\t')
         break
@@ -889,7 +895,7 @@ def retr_dicthostplan(namepopl, \
                       typeverb=1, \
                       ):
     
-    pathephe = os.environ['EPHESOS_DATA_PATH'] + '/'
+    pathephe = str(RepositoryPaths('EPHESOS_PATH').get_repository_path()) + os.sep
     path = pathephe + 'data/dicthost%s.csv' % namepopl
     if os.path.exists(path):
         if typeverb > 0:
@@ -943,7 +949,7 @@ def retr_dicttoii(toiitarg=None, boolreplexar=False, \
     
     dictfact = tdpy.retr_factconv()
     
-    pathephe = os.environ['EPHESOS_DATA_PATH'] + '/'
+    pathephe = str(RepositoryPaths('EPHESOS_PATH').get_repository_path()) + os.sep
     pathexof = pathephe + 'data/exofop_toilists.csv'
     if typeverb > 0:
         print('Reading from %s...' % pathexof)
@@ -1457,7 +1463,7 @@ def retr_massfromradi( \
 
     if strgtype == 'mine':
         # get interpolation data
-        path = os.environ['EPHESOS_DATA_PATH'] + '/data/massfromradi.csv'
+        path = _repository_data_path('EPHESOS', 'massfromradi.csv')
         if os.path.exists(path):
             if typeverb > 0:
                 print('Reading from %s...' % path)
@@ -1649,7 +1655,7 @@ def retr_dictexar( \
     strgnumbelemstar = 'numb%sstar' % strgelem
     strgnumbelemtranstar = 'numb%stranstar' % strgelem
     # get NASA Exoplanet Archive data
-    path = os.environ['EPHESOS_DATA_PATH'] + '/data/PSCompPars_2023.10.12_16.58.05.csv'
+    path = _repository_data_path('EPHESOS', 'PSCompPars_2023.10.12_16.58.05.csv')
     if typeverb > 0:
         print('Reading from %s...' % path)
     objtexar = pd.read_csv(path, skiprows=318)
@@ -3606,7 +3612,7 @@ def retr_alphelli(u, g):
 
 def plot_anim():
 
-    pathbase = os.environ['PEXO_DATA_PATH'] + '/imag/'
+    pathbase = str(RepositoryPaths('PEXO_PATH').get_visuals_path()) + os.sep
     radistar = 0.9
     
     booldark = True

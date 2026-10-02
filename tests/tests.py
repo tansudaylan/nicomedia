@@ -1,4 +1,5 @@
 import nicomedia
+from nicomedia.paths import get_visuals_path
 
 '''
 Calibrate the zero point for TESS
@@ -14,7 +15,7 @@ for k in indxstar:
     dictfluxband, gdatfluxband = retr_dictfluxband(dicttic8['tmptstar'][k], 'TESS', gdatfluxband=gdatfluxband)
     dictfluxband['magtsystTESSEstimate'][k] = retr_magtfromflux(dictfluxband['TESS'], 'TESS')
 
-path = os.environ['NICOMEDIA_DATA_PATH'] + '/visuals/'
+path = str(get_visuals_path()) + os.sep
 figr, axis = plt.subplots()
 axis.scatter(dictstar['magtsystTESS'], dictfluxband['magtsystTESSEstimate'])
 axis.set_xlabel('TIC8 TESS magnitude')
