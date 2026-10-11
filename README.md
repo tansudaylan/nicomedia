@@ -1,6 +1,6 @@
 # Nicomedia
 
-Nicomedia evaluates King-like and Gaussian point-spread profiles for astrophysical imaging and catalog models at scalar or array-valued coordinates.
+Nicomedia calculates analytic point-spread profiles at scalar or array-valued coordinates. Use it to see how a King-like or Gaussian profile redistributes a source's light across an image.
 
 ## Installation
 
