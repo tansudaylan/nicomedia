@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from nicomedia.main import retr_psfn
+from nicomedia.main import retr_psfn, retr_psfnwdth
 
 
 @pytest.mark.parametrize(
@@ -38,3 +38,16 @@ def test_king_profiles_require_parameter_array_and_start_index():
 
     with pytest.raises(ValueError, match="psfp and indxpsfpinit"):
         retr_psfn({}, np.array([0]), angles, "singking")
+
+
+def test_psf_width_wrapper_matches_tdpy():
+    import tdpy
+
+    angles = np.linspace(0.0, 4.0, 401)
+    sigmas = np.array([[0.5, 1.0], [1.5, 2.0]])
+    profiles = np.exp(-angles[None, :, None] ** 2 / (2.0 * sigmas[:, None, :] ** 2))
+
+    np.testing.assert_array_equal(
+        retr_psfnwdth(profiles, angles),
+        tdpy.retr_psfnwdth(profiles, angles),
+    )

@@ -18,6 +18,7 @@ from tdpy.exoplanet import (
     quadratic_to_kipping_limb_darkening,
 )
 from tdpy.population import subset_population
+from tdpy.spectral import evaluate_continuum_spectrum, evaluate_line_profile
 import chalcedon
 from tdpy.paths import RepositoryPaths
 from nicomedia.paths import get_visuals_path
@@ -27,35 +28,7 @@ def _repository_data_path(repository, *parts):
     return os.path.join(str(RepositoryPaths(repository + '_PATH').get_data_path()), *parts)
 
 
-def retr_psfnwdth( \
-                  psfn, \
-                  arryangl, \
-                  # fraction of maximum
-                  frac=0.5, \
-                 ):
-    '''
-    Return the PSF width
-    '''
-    
-    numbener = psfn.shape[0]
-    numbdqlt = psfn.shape[2]
-
-    indxener = np.arange(numbener)
-    indxdqlt = np.arange(numbdqlt)
-
-    wdth = np.zeros((numbener, numbdqlt))
-    for i in indxener:
-        for m in indxdqlt:
-            psfntemp = psfn[i, :, m]
-            indxanglgood = np.argsort(psfntemp)
-            intpwdth = max(frac * np.amax(psfntemp), np.amin(psfntemp))
-            if intpwdth >= np.amin(psfntemp[indxanglgood]) and intpwdth <= np.amax(psfntemp[indxanglgood]):
-                wdthtemp = scipy.interpolate.interp1d(psfntemp[indxanglgood], arryangl[indxanglgood], fill_value='extrapolate')(intpwdth)
-            else:
-                wdthtemp = 0.
-            wdth[i, m] = wdthtemp
-                        
-    return wdth
+retr_psfnwdth = tdpy.retr_psfnwdth
 
 
 def retr_gang(xpos, ypos):
@@ -170,7 +143,6 @@ def retr_spec(
         elin = np.atleast_1d(np.asarray(elin, dtype=float))
         if elin.size != flux.size:
             raise ValueError('elin must contain one center per flux value.')
-        offset = meanener[:, None] - elin[None, :]
 
         def line_width(value, name):
             if value is None:
@@ -180,28 +152,24 @@ def retr_spec(
                 width = np.full(flux.size, width.item())
             if width.size != flux.size or not np.isfinite(width).all() or np.any(width <= 0.0):
                 raise ValueError('%s must contain finite positive values, one per line.' % name)
-            return width[None, :]
+            return width
 
         if spectype == 'edis':
             if edisintp is None:
                 raise ValueError('edisintp is required for spectype=\'edis\'.')
-            sigma = line_width(edisintp(elin), 'edisintp(elin)')
+            gaussian_width = line_width(edisintp(elin), 'edisintp(elin)')
         elif spectype in ('gaus', 'voig', 'pvoi'):
-            sigma = line_width(sigm, 'sigm')
+            gaussian_width = line_width(sigm, 'sigm')
+        else:
+            gaussian_width = None
 
         if spectype in ('lore', 'voig', 'pvoi'):
-            gamma = line_width(gamm, 'gamm')
-
-        gaussian = np.exp(-0.5 * (offset / sigma) ** 2) / (sigma * np.sqrt(2.0 * np.pi)) \
-            if spectype != 'lore' else None
-        if spectype in ('gaus', 'edis'):
-            profile = gaussian
-        elif spectype == 'lore':
-            profile = gamma / (np.pi * (offset**2 + gamma**2))
-        elif spectype == 'voig':
-            args = (offset + 1j * gamma) / (np.sqrt(2.0) * sigma)
-            profile = np.real(scipy.special.wofz(args)) / (sigma * np.sqrt(2.0 * np.pi))
+            lorentz_width = line_width(gamm, 'gamm')
         else:
+            lorentz_width = None
+
+        mixing_fraction = None
+        if spectype == 'pvoi':
             if frac is None:
                 raise ValueError('frac is required for spectype=\'pvoi\'.')
             fraction = np.atleast_1d(np.asarray(frac, dtype=float))
@@ -210,12 +178,17 @@ def retr_spec(
             if fraction.size != flux.size or not np.isfinite(fraction).all() \
                     or np.any((fraction < 0.0) | (fraction > 1.0)):
                 raise ValueError('frac must contain values between zero and one, one per line.')
-            lorentzian = gamma / (np.pi * (offset**2 + gamma**2))
-            profile = (1.0 - fraction[None, :]) * gaussian + fraction[None, :] * lorentzian
-        return flux[None, :] * profile
+            mixing_fraction = fraction
+        return evaluate_line_profile(
+            meanener,
+            spectype,
+            flux,
+            elin,
+            gaussian_width=gaussian_width,
+            lorentz_width=lorentz_width,
+            mixing_fraction=mixing_fraction,
+        )
 
-    if spectype == 'powr':
-        return flux[None, :] * (meanener / gdat.enerpivt)[:, None] ** (-np.asarray(sind)[None, :])
     if spectype == 'colr':
         if plot:
             return np.zeros((meanener.size, flux.size))
@@ -230,13 +203,17 @@ def retr_spec(
             else:
                 spectrum[index] = flux * (gdat.bctrpara.ener[index] / gdat.enerpivt) ** (-sindcolr[index - 1])
         return spectrum
-    if spectype == 'curv':
-        return flux[None, :] * meanener[:, None] ** (
-            -np.asarray(sind)[None, :] - gdat.factlogtenerpivt[:, None] * np.asarray(curv)[None, :]
+    if spectype in ('powr', 'curv', 'expc'):
+        return evaluate_continuum_spectrum(
+            meanener,
+            flux,
+            spectype,
+            gdat.enerpivt,
+            sind,
+            curvature=curv,
+            cutoff_energy=expc,
+            log_energy_ratio=getattr(gdat, 'factlogtenerpivt', None),
         )
-    if spectype == 'expc':
-        return flux[None, :] * (meanener / gdat.enerpivt)[:, None] ** (-np.asarray(sind)[None, :]) \
-            * np.exp(-(meanener - gdat.enerpivt)[:, None] / np.asarray(expc)[None, :])
     raise ValueError('Unsupported spectype %r.' % spectype)
 
 
@@ -655,18 +632,8 @@ def retr_objtlinefade(x, y, colr='black', initalph=1., alphfinl=0.):
     return lc
 
 
-def retr_liststrgcomp(numbcomp):
-    
-    liststrgcomp = np.array(['b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm'])[:numbcomp]
-
-    return liststrgcomp
-
-
-def retr_listcolrcomp(numbcomp):
-    
-    listcolrcomp = np.array(['magenta', 'orange', 'red', 'green', 'purple', 'cyan'])[:numbcomp]
-
-    return listcolrcomp
+retr_liststrgcomp = tdpy.retr_liststrgcomp
+retr_listcolrcomp = tdpy.retr_listcolrcomp
 
 
 def retr_dictfluxband(tmptstar, liststrgband, gdatfluxband=None, pathvisutarg=None, strgtarg=None, typefileplot='png', \
@@ -1395,46 +1362,7 @@ def calc_tsmmesmm(dictpopl, strgelem='comp', boolsamp=False):
     #raise Exception('')
 
 
-def retr_reso(listperi, maxmordr=10):
-    
-    if np.where(listperi == 0)[0].size > 0:
-        raise Exception('')
-
-    numbsamp = listperi.shape[0]
-    numbcomp = listperi.shape[1]
-    indxcomp = np.arange(numbcomp)
-    listratiperi = np.zeros((numbsamp, numbcomp, numbcomp))
-    intgreso = np.zeros((numbcomp, numbcomp, 2))
-    for j in indxcomp:
-        for jj in indxcomp:
-            if j >= jj:
-                continue
-                
-            rati = listperi[:, j] / listperi[:, jj]
-            #print('listperi')
-            #print(listperi)
-            #print('rati')
-            #print(rati)
-            if rati < 1:
-                listratiperi[:, j, jj] = 1. / rati
-            else:
-                listratiperi[:, j, jj] = rati
-
-            minmdiff = 1e100
-            for a in range(1, maxmordr):
-                for aa in range(1, maxmordr):
-                    diff = abs(float(a) / aa - listratiperi[:, j, jj])
-                    if np.mean(diff) < minmdiff:
-                        minmdiff = np.mean(diff)
-                        minmreso = a, aa
-            intgreso[j, jj, :] = minmreso
-            #print('minmdiff') 
-            #print(minmdiff)
-            #print('minmreso')
-            #print(minmreso)
-            #print
-    
-    return intgreso, listratiperi
+retr_reso = tdpy.retr_reso
 
 
 def retr_dilu(tmpttarg, tmptcomp, strgwlentype='tess'):
@@ -1477,38 +1405,9 @@ def retr_toiifstr():
     listtoiifstr = np.array(listtoiifstr)
 
     return listtoiifstr
-    
 
-def retr_radifrommass( \
-                      # list of planet masses in units of Earth mass
-                      listmassplan, \
-                      # type of radius-mass model
-                      strgtype='mine', \
-                      ):
-    '''
-    Estimate planetary radii from samples of masses.
-    '''
-    
-    if len(listmassplan) == 0:
-        raise Exception('')
 
-    if strgtype == 'mine':
-        # interpolate masses
-        listradi = np.empty_like(listmassplan)
-        
-        indx = np.where(listmassplan <= 2.)[0]
-        listradi[indx] = listmassplan[indx]**0.28
-        
-        indx = np.where((listmassplan > 2.) & (listmassplan < 130.))[0]
-        listradi[indx] = 4.48 * (listmassplan[indx] / 20.)**(0.57)
-        
-        indx = np.where((listmassplan >= 130.) & (listmassplan < 2.66e4))[0]
-        listradi[indx] = 10.1 * (listmassplan[indx] / 1e5)**(-0.04)
-        
-        indx = np.where(listmassplan >= 2.66e4)[0]
-        listradi[indx] = 20. * (listmassplan[indx] / 5e4)**0.88
-    
-    return listradi
+retr_radifrommass = tdpy.retr_radifrommass
 
 
 def retr_massfromradi( \
@@ -1583,45 +1482,10 @@ def retr_massfromradi( \
     return listmass
 
 
-def retr_tmptplandayynigh(tmptirra, epsi):
-    '''
-    Estimate the dayside and nightside temperatures [K] of a planet given its irradiation temperature in K and recirculation efficiency.
-    '''
-    
-    tmptdayy = tmptirra * (2. / 3. - 5. / 12. * epsi)**.25
-    tmptnigh = tmptirra * (epsi / 4.)**.25
-    
-    return tmptdayy, tmptnigh
-
-
-def retr_esmm(tmptplanequi, tmptstar, radicomp, radistar, kmag):
-
-    tmptplanirra = tmptplanequi * np.sqrt(2.)
-    tmptplandayy, tmptplannigh = retr_tmptplandayynigh(tmptplanirra, 0.1)
-    ratiradi = radicomp / radistar / tdpy.retr_factconv()['rsre']
-    esmm = 1.1e3 * retr_fluxspecbbodwlen(tmptplandayy, 7.5) / retr_fluxspecbbodwlen(tmptstar, 7.5) * ratiradi**2 * 10**(-kmag / 5.)
-
-    return esmm
-
-
-def retr_tsmm(radicomp, tmptplan, massplan, radistar, jmag):
-
-    coefscal = np.select(
-        [radicomp < 1.5, radicomp < 2.75, radicomp < 4., radicomp <= 10.],
-        [0.190, 1.26, 1.28, 1.15],
-        default=np.nan,
-    )
-    tsmm = coefscal * radicomp**3 * tmptplan / massplan / radistar**2 * 10**(-jmag / 5.)
-    
-    return tsmm
-
-
-def retr_scalheig(tmptplan, massplan, radicomp):
-    
-    # tied to Jupier's scale height for H/He at 110 K   
-    scalheig = 27. * (tmptplan / 160.) / (massplan / radicomp**2) / 71398. # [R_J]
-
-    return scalheig
+retr_tmptplandayynigh = tdpy.retr_tmptplandayynigh
+retr_esmm = tdpy.retr_esmm
+retr_tsmm = tdpy.retr_tsmm
+retr_scalheig = tdpy.retr_scalheig
 
 
 def retr_pntszero(strginst):
@@ -1671,30 +1535,19 @@ def retr_magtfromflux(flux, strginst):
     return magt
 
 
-def retr_fluxfrommagt(dmag, strginst, stdvmagt=None):
-    
-    # this needs to be zero if flux is properly calibrated
+def retr_fluxfrommagt(magt, strginst, stdvmagt=None):
+    """Calculate instrument flux from magnitude and zero point."""
+
     pntszero = retr_pntszero(strginst)
-    #pntszero = 0.
-    
-    flux = 10**(-0.4 * (magt - pntszero))
-
+    mag = np.asarray(magt, dtype=float)
+    flux = 10.0 ** (-0.4 * (mag - pntszero))
     if stdvmagt is not None:
-        stdvrflx = np.log(10.) * 0.4 * rflx * stdvdmag
+        stdvflux = np.log(10.0) * 0.4 * flux * np.asarray(stdvmagt, dtype=float)
         return flux, stdvflux
-    else:
-        return flux
+    return flux
 
 
-def retr_rflxfromdmag(dmag, stdvdmag=None):
-    
-    rflx = 10**(-dmag / 2.5)
-
-    if stdvdmag is not None:
-        stdvrflx = np.log(10.) / 2.5 * rflx * stdvdmag
-        return rflx, stdvrflx
-    else:
-        return rflx
+retr_rflxfromdmag = tdpy.retr_rflxfromdmag
 
 
 def retr_dictexar( \
@@ -2075,71 +1928,9 @@ def retr_blimener(typeband):
     return ener
 
 
-def retr_fluxspecbbod(tmpt, xdat=None, typeband=None, typexdat=None):
-    '''
-    Calculate the spectral flux (power per area per wavelenght) of a blackbody
-    wlen in microns
-    '''
-    
-    if xdat is None and typeband is None or xdat is not None and typeband is not None:
-        raise Exception('Either xdat or typeband should be defined.')
-
-    if typeband is not None:
-        if xdat is not None:
-            raise Exception('')
-        if typexdat is not None:
-            raise Exception('')
-        if typeband == 'AXIS0224':
-            ener = np.logspace(np.log10(200.), np.log10(2400.), 400) # [eV]
-            typexdat = 'evol'
-            xdat = ener
-        else:
-            raise Exception()
-    else:
-        if typexdat is None:
-            typexdat = 'wlen'
-
-    #0.0143877735e6 # [um K]
-    #spec = 3.742e11 / wlen**5 / (np.exp(0.0143877735e6 / (wlen * tmpt)) - 1.)
-    
-    # 1 electronvolt (eV) == 1.24 microns
-    #print('temp: need to check the fudge factor here to go from temperature to W/m^2')
-        # M3 star, 3500 K, (FX=8.4e-17erg/s/cm2 ; 0.2-2.4keV) at a distance of 2.5 kpc
-    if typexdat == 'evol':
-        fluxspec = retr_fluxspecbbodener(tmpt, xdat)
-    elif typexdat == 'wlen':
-        fluxspec = retr_fluxspecbbodwlen(tmpt, xdat)
-    else:
-        raise ValueError('typexdat must be evol or wlen.')
-
-    if typeband is not None:
-        return fluxspec, xdat
-    elif xdat is not None:
-        return fluxspec
-
-
-def retr_fluxspecbbodener(tmpt, ener):
-
-    planck = 6.62607015e-34 # [J s]
-    clght = 299792458. # [m / s]
-    boltz = 1.380649e-23 # [J / K]
-    enerjoule = np.asarray(ener) * 1.602176634e-19 # [J]
-    spec = 2. * np.pi * enerjoule**3 / planck**3 / clght**2 / np.expm1(enerjoule / boltz / tmpt)
-    spec *= 1.602176634e-16 # [erg / s / cm^2 / eV]
-
-    return spec
-
-
-def retr_fluxspecbbodwlen(tmpt, wlen):
-
-    planck = 6.62607015e-34 # [J s]
-    clght = 299792458. # [m / s]
-    boltz = 1.380649e-23 # [J / K]
-    wlenmetr = np.asarray(wlen) * 1e-6 # [m]
-    fluxspec = 2. * np.pi * planck * clght**2 / wlenmetr**5 / np.expm1(planck * clght / wlenmetr / boltz / tmpt)
-    fluxspec *= 1e-3 # [erg / s / cm^2 / micron]
-
-    return fluxspec
+retr_fluxspecbbod = tdpy.retr_fluxspecbbod
+retr_fluxspecbbodener = tdpy.retr_fluxspecbbodener
+retr_fluxspecbbodwlen = tdpy.retr_fluxspecbbodwlen
 
 
 def retr_functran(typeinst, xdat=None):
@@ -2166,109 +1957,11 @@ def retr_functran(typeinst, xdat=None):
 
 
 # physics
-def retr_vesc(massplan, radicomp):
-    
-    vesc = 11.2 * np.sqrt(massplan / radicomp) # km/s
-
-    return vesc
-
-
-def retr_rs2a(rsmacomp, rrat):
-    
-    rs2a = rsmacomp / (1. + rrat)
-    
-    return rs2a
-
-
-def retr_rsmacomp(peri, dura, cosi):
-    
-    rsmacomp = np.sqrt(np.sin(dura * np.pi / peri / 24.)**2 + cosi**2)
-    
-    return rsmacomp
-
-
-def retr_duratranfull(
-                      # orbital period [days]
-                      pericomp, \
-                      # sum of the radii of th star and the companion divided by the semi-major axis
-                      rsmacomp, \
-                      # cosine of the orbital inclination
-                      cosicomp, \
-                      # radius ratio of the companion and the star
-                      rratcomp, \
-                     ):
-    '''
-    Return the full transit duration in hours.
-    '''    
-    
-    # radius of the star minus the radius of the companion
-    rdiacomp = rsmacomp * (1. - 2. / (1. + rratcomp))
-
-    fact = rdiacomp**2 - cosicomp**2
-    
-    duratranfull = np.full_like(pericomp, np.nan)
-    indxtran = np.where(fact > 0)[0]
-    
-    if indxtran.size > 0:
-        # sine of inclination
-        sinicomp = np.sqrt(1. - cosicomp[indxtran]**2)
-    
-        duratranfull[indxtran] = 24. * pericomp[indxtran] / np.pi * np.arcsin(np.sqrt(fact[indxtran]) / sinicomp) # [hours]
-
-    return duratranfull 
-
-
-def retr_duratrantotl( \
-                      # orbital period [days]
-                      pericomp, \
-                      # sum of the radii of th star and the companion divided by the semi-major axis
-                      rsmacomp, \
-                      # cosine of the orbital inclination
-                      cosicomp, \
-                      # Boolean flag to turn on diagnostic mode
-                      booldiag=True, \
-                     ):
-    '''
-    Return the total transit duration in hours.
-    '''    
-    
-    if booldiag:
-        if len(pericomp) != len(rsmacomp) or len(cosicomp) != len(rsmacomp):
-            print('')
-            print('pericomp')
-            summgene(pericomp)
-            print('rsmacomp')
-            summgene(rsmacomp)
-            print('cosicomp')
-            summgene(cosicomp)
-            raise Exception('')
-
-    fact = rsmacomp**2 - cosicomp**2
-
-    duratrantotl = np.full_like(pericomp, 0., dtype=float)
-    indx = np.where(fact >= 0.)[0]
-
-    if indx.size > 0:
-        # sine of inclination
-        sinicomp = np.sqrt(1. - cosicomp[indx]**2)
-
-        duratrantotl[indx] = 24. * pericomp[indx] / np.pi * np.arcsin(np.sqrt(fact[indx]) / sinicomp) # [hours]
-
-    return duratrantotl
-
-
-#def retr_fracrtsa(fracrprs, fracsars):
-#    
-#    fracrtsa = (fracrprs + 1.) / fracsars
-#    
-#    return fracrtsa
-#
-#
-#def retr_fracsars(fracrprs, fracrtsa):
-#    
-#    fracsars = (fracrprs + 1.) / fracrtsa
-#    
-#    return fracsars
+retr_vesc = tdpy.retr_vesc
+retr_rs2a = tdpy.retr_rs2a
+retr_rsmacomp = tdpy.retr_rsmacomp
+retr_duratranfull = tdpy.retr_duratranfull
+retr_duratrantotl = tdpy.retr_duratrantotl
 
 
 def retr_rflxmodlrise(time, timerise, coeflinerise, coefquadrise):
@@ -2282,118 +1975,13 @@ def retr_rflxmodlrise(time, timerise, coeflinerise, coefquadrise):
     return rflx, dflxrise
 
 
-def retr_rvel( \
-              # times in days at which to evaluate the radial velocity
-              time, \
-              # epoch of midtransit
-              epocmtracomp, \
-              # orbital period in days
-              pericomp, \
-              # mass of the secondary in Solar mass [M_S]
-              masscomp, 
-              # mass of the primary in Solar mass [M_S]
-              massstar, \
-              # orbital inclination in degrees
-              inclcomp, \
-              # orbital eccentricity
-              eccecomp, \
-              # argument of periastron in degrees
-              arpacomp, \
-              ):
-    '''
-    Calculate the time-series of radial velocity (RV) of a two-body system.
-    '''
-    
-    arparadi = np.deg2rad(arpacomp)
-    anomtran = np.pi / 2. - arparadi
-    anomecctran = 2. * np.arctan2(
-        np.sqrt(1. - eccecomp) * np.sin(anomtran / 2.),
-        np.sqrt(1. + eccecomp) * np.cos(anomtran / 2.),
-    )
-    # mean anomaly at mid-transit, which sets the orbital phase at the reference time
-    anommeantran = anomecctran - eccecomp * np.sin(anomecctran)
-    
-    # radial velocity (RV) semi-amplitude
-    rvelsema = retr_rvelsema(pericomp, massstar, masscomp, inclcomp, eccecomp)
-    
-    return keplerian_radial_velocity(time, pericomp, rvelsema, eccecomp, arparadi, anommeantran, epocmtracomp)
-
-
-def retr_coeflmdkkipp(u1, u2):
-    return quadratic_to_kipping_limb_darkening(u1, u2)
-
-
-def retr_coeflmdkfromkipp(q1, q2):
-    return kipping_to_quadratic_limb_darkening(q1, q2)
-
-
-def retr_rvelsema( \
-                  # orbital period in days
-                  pericomp, \
-                  # mass of the primary in Solar mass [M_S]
-                  massstar, \
-                  # mass of the secondary in Solar mass [M_S]
-                  masscomp, \
-                  # orbital inclination in degrees
-                  inclcomp, \
-                  # orbital eccentricity
-                  eccecomp, \
-                 ):
-    '''
-    Calculate the semi-amplitude of radial velocity (RV) of a two-body system.
-    '''
-    
-    grav = 6.67430e-11 # [m^3 / kg / s^2]
-    masssolr = 1.98847e30 # [kg]
-    dayy = 86400. # [s]
-    peri = np.asarray(pericomp) * dayy # [s]
-    massstar = np.asarray(massstar) * masssolr # [kg]
-    masscomp = np.asarray(masscomp) * masssolr # [kg]
-    rvelsema = (2. * np.pi * grav / peri)**(1. / 3.) * masscomp * np.sin(np.deg2rad(inclcomp)) / \
-               (massstar + masscomp)**(2. / 3.) / np.sqrt(1. - eccecomp**2) # [m / s]
-
-    return rvelsema
-
-
-def retr_brgtlmdk(cosg, coeflmdk, brgtraww=None, typelmdk='quad'):
-    
-    if brgtraww is None:
-        brgtraww = 1.
-    
-    if typelmdk == 'linr':
-        factlmdk = 1. - coeflmdk[0] * (1. - cosg)
-    
-    if typelmdk == 'quad' or typelmdk == 'quadkipp':
-        factlmdk = quadratic_limb_darkening(cosg, coeflmdk)
-    
-    if typelmdk == 'nlin':
-        if len(coeflmdk) != 3:
-            raise ValueError('The nlin limb-darkening law requires three coefficients.')
-        factlmdk = 1. - coeflmdk[0] * (1. - cosg**0.5) - coeflmdk[1] * (1. - cosg) - coeflmdk[2] * (1. - cosg**1.5)
-    
-    if typelmdk == 'none':
-        factlmdk = np.ones_like(cosg)
-    
-    brgtlmdk = brgtraww * factlmdk
-    
-    return brgtlmdk
-
-
-def retr_logg(radi, mass):
-    
-    logg = mass / radi**2
-
-    return logg
-
-
-def retr_albg(amplplanrefl, radicomp, smax):
-    '''
-    Return geometric albedo.
-    '''
-    
-    albg = amplplanrefl / (radicomp / smax)**2
-    
-    return albg
+retr_rvel = tdpy.retr_rvel
+retr_coeflmdkkipp = quadratic_to_kipping_limb_darkening
+retr_coeflmdkfromkipp = kipping_to_quadratic_limb_darkening
+retr_rvelsema = tdpy.retr_rvelsema
+retr_brgtlmdk = tdpy.retr_brgtlmdk
+retr_logg = tdpy.retr_logg
+retr_albg = tdpy.retr_albg
 
 
 def retr_noisphot(magtinpt, strginst, typeoutp='intplite', booldiag=True):
@@ -3557,47 +3145,10 @@ def retr_rascdeclfromstrgmast(strgmast):
     return rasctarg, decltarg
 
     
-def retr_lcurmodl_flarsing(meantime, timeflar, amplflar, scalrise, scalfall):
-    
-    numbtime = meantime.size
-    if numbtime == 0:
-        raise Exception('')
-    indxtime = np.arange(numbtime)
-    indxtimerise = np.where(meantime < timeflar)[0]
-    indxtimefall = np.setdiff1d(indxtime, indxtimerise)
-    lcur = np.empty_like(meantime)
-    lcur[indxtimerise] = np.exp((meantime[indxtimerise] - timeflar) / scalrise)
-    lcur[indxtimefall] = np.exp(-(meantime[indxtimefall] - timeflar) / scalfall)
-    lcur *= amplflar / np.amax(lcur) 
-    
-    return lcur
-
-
-def retr_imfa(cosi, rs2a, ecce, sinw):
-    
-    imfa = cosi / rs2a * (1. - ecce**2) / (1. + ecce * sinw)
-
-    return imfa
-
-
-def retr_deptbeam(peri, massstar, masscomp):
-    '''
-    Calculate the beaming amplitude.
-    '''
-    
-    deptbeam = 2.8 * peri**(-1. / 3.) * (massstar + masscomp)**(-2. / 3.) * masscomp # [ppt]
-    
-    return deptbeam
-
-
-def retr_deptelli(peri, densstar, massstar, masscomp):
-    '''
-    Calculate the ellipsoidal variation amplitude.
-    '''
-    
-    deptelli = 18.9 * peri**(-2.) / densstar * (1. / (1. + massstar / masscomp)) # [ppt]
-    
-    return deptelli
+retr_lcurmodl_flarsing = tdpy.retr_lcurmodl_flarsing
+retr_imfa = tdpy.retr_imfa
+retr_deptbeam = tdpy.retr_deptbeam
+retr_deptelli = tdpy.retr_deptelli
 
 
 def retr_masscomp(amplslen, peri):
@@ -3608,77 +3159,11 @@ def retr_masscomp(amplslen, peri):
     return masscomp
 
 
-def retr_smaxkepl(peri, masstotl, \
-                  # a non-Keplerian factor, controlling the orbital period at a given semi-major axis
-                  factnonk=1., \
-                 ):
-    '''
-    Get the semi-major axis of a Keplerian orbit (in AU) from the orbital period (in days) and total mass (in Solar masses).
-
-    Arguments
-        peri: orbital period [days]
-        masstotl: total mass of the system [Solar Masses]
-    Returns
-        smax: the semi-major axis of a Keplerian orbit [AU]
-    '''
-    
-    smax = (7.496e-6 * masstotl * (peri / factnonk)**2)**(1. / 3.) # [AU]
-    
-    return smax
-
-
-def retr_perikepl(smax, masstotl, \
-                  # a non-Keplerian factor, controlling the orbital period at a given semi-major axis
-                  factnonk=1., \
-                 ):
-    '''
-    Get the period of a Keplerian orbit (in days) from the semi-major axis (in AU) and total mass (in Solar masses).
-
-    Arguments
-        smax: the semi-major axis of a Keplerian orbit [AU]
-        masstotl: total mass of the system [Solar Masses]
-    Returns
-        peri: orbital period [days]
-    '''
-    
-    peri = np.sqrt(smax**3 / 7.496e-6 / masstotl) * factnonk
-    
-    return peri
-
-
-def retr_radiroch(radistar, densstar, denscomp):
-    '''
-    Return the Roche limit.
-
-    Arguments
-        radistar: radius of the primary star
-        densstar: density of the primary star
-        denscomp: density of the companion
-    '''    
-    radiroch = radistar * (2. * densstar / denscomp)**(1. / 3.)
-    
-    return radiroch
-
-
-def retr_radihill(smax, masscomp, massstar):
-    '''
-    Return the Hill radius of a companion.
-
-    Arguments
-        peri: orbital period
-        rsmacomp: the sum of radii of the two bodies divided by the semi-major axis
-        cosi: cosine of the inclination
-    '''    
-    radihill = smax * (masscomp / 3. / massstar)**(1. / 3.) # [AU]
-    
-    return radihill
-
-
-def retr_alphelli(u, g):
-    
-    alphelli = 0.15 * (15 + u) * (1 + g) / (3 - u)
-    
-    return alphelli
+retr_smaxkepl = tdpy.retr_smaxkepl
+retr_perikepl = tdpy.retr_perikepl
+retr_radiroch = tdpy.retr_radiroch
+retr_radihill = tdpy.retr_radihill
+retr_alphelli = tdpy.retr_alphelli
 
 
 def plot_anim():
