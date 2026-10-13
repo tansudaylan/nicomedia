@@ -29,20 +29,8 @@ def _repository_data_path(repository, *parts):
 
 
 retr_psfnwdth = tdpy.retr_psfnwdth
-
-
-def retr_gang(xpos, ypos):
-    
-    gang = np.arccos(np.cos(xpos) * np.cos(ypos))
-
-    return gang
-
-
-def retr_aang(xpos, ypos):
-
-    aang = np.arctan2(ypos, xpos)
-
-    return aang
+retr_gang = tdpy.retr_gang
+retr_aang = tdpy.retr_aang
 
 
 def retr_psfn(
@@ -215,24 +203,6 @@ def retr_spec(
             log_energy_ratio=getattr(gdat, 'factlogtenerpivt', None),
         )
     raise ValueError('Unsupported spectype %r.' % spectype)
-
-
-### find the surface brightness due to one point source
-def retr_sbrtpnts(gdat, xpos, ypos, spec, psfnintp, indxpixlelem):
-    
-    # calculate the distance to all pixels from each point source
-    dist = retr_angldistunit(gdat, xpos, ypos, indxpixlelem)
-    
-    # interpolate the PSF onto the pixels
-    if gdat.kernevaltype == 'ulip':
-        psfntemp = psfnintp(dist)
-    if gdat.kernevaltype == 'bspx':
-        pass
-
-    # scale by the PS spectrum
-    sbrtpnts = spec[:, None, None] * psfntemp
-    
-    return sbrtpnts
 
 
 # databases
@@ -605,33 +575,6 @@ def retr_dictpopltic8( \
     return dictquer
 
 
-def retr_objtlinefade(x, y, colr='black', initalph=1., alphfinl=0.):
-    
-    colr = get_color(colr)
-    cdict = {'red':   ((0.,colr[0],colr[0]),(1.,colr[0],colr[0])),
-             'green': ((0.,colr[1],colr[1]),(1.,colr[1],colr[1])),
-             'blue':  ((0.,colr[2],colr[2]),(1.,colr[2],colr[2])),
-             'alpha': ((0.,initalph, initalph), (1., alphfinl, alphfinl))}
-    
-    Npts = len(x)
-    if len(y) != Npts:
-        raise AttributeError("x and y must have same dimension.")
-   
-    segments = np.zeros((Npts-1,2,2))
-    segments[0][0] = [x[0], y[0]]
-    for i in range(1,Npts-1):
-        pt = [x[i], y[i]]
-        segments[i-1][1] = pt
-        segments[i][0] = pt 
-    segments[-1][1] = [x[-1], y[-1]]
-
-    individual_cm = mpl.colors.LinearSegmentedColormap('indv1', cdict)
-    lc = mpl.collections.LineCollection(segments, cmap=individual_cm)
-    lc.set_array(np.linspace(0.,1.,len(segments)))
-    
-    return lc
-
-
 retr_liststrgcomp = tdpy.retr_liststrgcomp
 retr_listcolrcomp = tdpy.retr_listcolrcomp
 
@@ -744,166 +687,6 @@ def retr_dictfluxband(tmptstar, liststrgband, gdatfluxband=None, pathvisutarg=No
     
     return dictfluxband, gdatfluxband
 
-
-def plot_orbt( \
-              # size of the figure
-              sizefigr=(8, 8), \
-              listcolrcomp=None, \
-              liststrgcomp=None, \
-              boolsingside=True, \
-              ## file type of the plot
-              typefileplot='png', \
-
-              # type of verbosity
-              ## -1: absolutely no text
-              ##  0: no text output except critical warnings
-              ##  1: minimal description of the execution
-              ##  2: detailed description of the execution
-              typeverb=1, \
-             ):
-
-    if listcolrcomp is None:
-        listcolrcomp = retr_listcolrcomp(numbcomp)
-
-    if liststrgcomp is None:
-        liststrgcomp = retr_liststrgcomp(numbcomp)
-    
-    ## scale factor for the star
-    factstar = 5.
-    
-    ## scale factor for the planets
-    factplan = 20.
-    
-    # maximum y-axis value
-    maxmyaxi = 0.05
-
-    if boolinclmerc:
-        # Mercury
-        smaxmerc = 0.387 # [AU]
-        radicompmerc = 0.3829 # [R_E]
-    
-    time = np.arange(0., 30., 2. / 60. / 24.)
-    numbtime = time.size
-    indxtime = np.arange(numbtime)
-   
-    if boolanim:
-        numbiter = min(500, numbtime)
-    else:
-        numbiter = 1
-    indxiter = np.arange(numbiter)
-    
-    xposmaxm = smax
-    yposmaxm = factpers * xposmaxm
-    numbtimequad = 10
-    
-    # get transit model based on TESS ephemerides
-    rratcomp = radicomp / radistar
-    
-    rflxtranmodl = eval_modl(time, 'PlanetarySystem', pericomp=peri, epocmtracomp=epoc, rsmacomp=rsmacomp, cosicomp=cosi, rratcomp=rratcomp)['rflx'] - 1.
-    
-    lcur = rflxtranmodl + np.random.randn(numbtime) * 1e-6
-    ylimrflx = [np.amin(lcur), np.amax(lcur)]
-    
-    phas = np.random.rand(numbcomp)[None, :] * 2. * np.pi + 2. * np.pi * time[:, None] / peri[None, :]
-    yposelli = yposmaxm[None, :] * np.sin(phas)
-    xposelli = xposmaxm[None, :] * np.cos(phas)
-    
-    # time indices for iterations
-    indxtimeiter = np.linspace(0., numbtime - numbtime / numbiter, numbiter).astype(int)
-    
-    if typevisu.startswith('cart'):
-        colrstar = 'k'
-        colrface = 'w'
-        plt.style.use('default')
-    else:
-        colrface = 'k'
-        colrstar = 'w'
-        plt.style.use('dark_background')
-    
-    if boolanim:
-        gdat.cmndmakeanim = 'convert -delay 5'
-        listpathtemp = []
-    for k in indxiter:
-        
-        if typeplotlcurposi == 'lowr':
-            numbrows = 2
-        else:
-            numbrows = 1
-        figr, axis = plt.subplots(figsize=sizefigr)
-
-        ### lower half of the star
-        w1 = mpl.patches.Wedge((0, 0), radistarscal, 180, 360, fc=colrstar, zorder=1, edgecolor=colrstar)
-        axis.add_artist(w1)
-        
-        for jj, j in enumerate(indxcomp):
-            xposellishft = np.roll(xposelli[:, j], -indxtimeiter[k])[-numbtimequad:][::-1]
-            yposellishft = np.roll(yposelli[:, j], -indxtimeiter[k])[-numbtimequad:][::-1]
-        
-            # add cartoon-like disks for planets
-            if typeplotplan.startswith('colr'):
-                colrplan = listcolrcomp[j]
-                radi = radicomp[j] / dictfact['rsre'] / dictfact['aurs'] * factplan
-                w1 = mpl.patches.Circle((xposelli[indxtimeiter[k], j], yposelli[indxtimeiter[k], j], 0), radius=radi, color=colrplan, zorder=3)
-                axis.add_artist(w1)
-            
-            # add trailing tails to planets
-            if typeplotplan.startswith('colrtail'):
-                objt = retr_objtlinefade(xposellishft, yposellishft, colr=listcolrcomp[j], initalph=1., alphfinl=0.)
-                axis.add_collection(objt)
-            
-            # add labels to planets
-            if typeplotplan == 'colrtaillabl':
-                axis.text(.6 + 0.03 * jj, 0.1, liststrgcomp[j], color=listcolrcomp[j], transform=axis.transAxes)
-        
-        ## upper half of the star
-        w1 = mpl.patches.Wedge((0, 0), radistarscal, 0, 180, fc=colrstar, zorder=4, edgecolor=colrstar)
-        axis.add_artist(w1)
-        
-        if boolinclmerc:
-            ## add Mercury
-            axis.text(.387, 0.01, 'Mercury', color='gray', ha='right')
-            radi = radicompmerc / dictfact['rsre'] / dictfact['aurs'] * factplan
-            w1 = mpl.patches.Circle((smaxmerc, 0), radius=radi, color='gray')
-            axis.add_artist(w1)
-        
-        # temperature axis
-        #axistwin = axis.twiny()
-        ##axistwin.set_xlim(axis.get_xlim())
-        #xpostemp = axistwin.get_xticks()
-        ##axistwin.set_xticks(xpostemp[1:])
-        #axistwin.set_xticklabels(['%f' % tmpt for tmpt in listtmpt])
-        
-        # temperature contours
-        #for tmpt in [500., 700,]:
-        #    smaj = tmpt
-        #    axis.axvline(smaj, ls='--')
-        
-        axis.get_yaxis().set_visible(False)
-        axis.set_aspect('equal')
-        
-        if boolinclmerc:
-            maxmxaxi = max(1.2 * np.amax(smaxcomp), 0.4)
-        else:
-            maxmxaxi = 1.2 * np.amax(smaxcomp)
-        
-        if boolsingside:
-            minmxaxi = 0.
-        else:
-            minmxaxi = -maxmxaxi
-
-        axis.set_xlim([minmxaxi, maxmxaxi])
-        axis.set_ylim([-maxmyaxi, maxmyaxi])
-        axis.set_xlabel('Distance from the star [AU]')
-        
-        #plt.subplots_adjust()
-        #axis.legend()
-        
-        strgvisu = ''
-        
-        print('Writing to %s...' % pathtemp)
-        plt.savefig(pathtemp)
-        plt.close()
-        
 
 def retr_dictpoplrvel():
     
@@ -1363,26 +1146,7 @@ def calc_tsmmesmm(dictpopl, strgelem='comp', boolsamp=False):
 
 
 retr_reso = tdpy.retr_reso
-
-
-def retr_dilu(tmpttarg, tmptcomp, strgwlentype='tess'):
-    
-    if strgwlentype != 'tess':
-        raise Exception('')
-    else:
-        binswlen = np.linspace(0.6, 1.)
-    meanwlen = (binswlen[1:] + binswlen[:-1]) / 2.
-    diffwlen = (binswlen[1:] - binswlen[:-1]) / 2.
-    
-    fluxspectarg = retr_fluxspecbbod(tmpttarg, meanwlen)
-    fluxtarg = np.sum(diffwlen * fluxspectarg)
-    
-    fluxspeccomp = retr_fluxspecbbod(tmptcomp, meanwlen)
-    fluxcomp = np.sum(diffwlen * fluxspeccomp)
-    
-    dilu = 1. - fluxtarg / (fluxtarg + fluxcomp)
-    
-    return dilu
+retr_dilu = tdpy.retr_dilu
 
 
 def retr_toiifstr():
@@ -1486,67 +1250,9 @@ retr_tmptplandayynigh = tdpy.retr_tmptplandayynigh
 retr_esmm = tdpy.retr_esmm
 retr_tsmm = tdpy.retr_tsmm
 retr_scalheig = tdpy.retr_scalheig
-
-
-def retr_pntszero(strginst):
-
-    if strginst == 'TESS':
-        pntszero = 20.4
-
-    elif strginst == 'LSSTuband':
-        pntszero = -15
-    elif strginst == 'LSSTgband':
-        pntszero = -15
-    elif strginst == 'LSSTrband':
-        pntszero = -15
-    elif strginst == 'LSSTiband':
-        pntszero = -15
-    elif strginst == 'LSSTzband':
-        pntszero = -15
-    elif strginst == 'LSSTyband':
-        pntszero = -15
-    elif strginst == 'TESS-GEO-UV':
-        pntszero = -19
-    elif strginst == 'TESS-GEO-VIS':
-        pntszero = -17
-    else:
-        print('')
-        print('')
-        print('')
-        print('strginst')
-        print(strginst)
-        raise Exception('strginst is not defined.')
-
-    return pntszero
-
-
-def retr_magtfromflux(flux, strginst):
-    
-    # this needs to be zero if flux is properly calibrated
-    pntszero = retr_pntszero(strginst)
-    #pntszero = 0
-
-    magt = -2.5 * np.log10(flux) + pntszero
-    
-    #mlikmagttemp = 10**((mlikmagttemp - 20.424) / (-2.5))
-    #stdvmagttemp = mlikmagttemp * stdvmagttemp / 1.09
-    #gdat.stdvmagtrefr = 1.09 * gdat.stdvrefrrflx[o] / gdat.refrrflx[o]
-    
-    return magt
-
-
-def retr_fluxfrommagt(magt, strginst, stdvmagt=None):
-    """Calculate instrument flux from magnitude and zero point."""
-
-    pntszero = retr_pntszero(strginst)
-    mag = np.asarray(magt, dtype=float)
-    flux = 10.0 ** (-0.4 * (mag - pntszero))
-    if stdvmagt is not None:
-        stdvflux = np.log(10.0) * 0.4 * flux * np.asarray(stdvmagt, dtype=float)
-        return flux, stdvflux
-    return flux
-
-
+retr_pntszero = tdpy.retr_pntszero
+retr_magtfromflux = tdpy.retr_magtfromflux
+retr_fluxfrommagt = tdpy.retr_fluxfrommagt
 retr_rflxfromdmag = tdpy.retr_rflxfromdmag
 
 
@@ -1890,71 +1596,12 @@ def retr_dictxraystar(tmptstar, radistar, diststar):
     return dictxraystar
 
 
-def retr_fluxbolobbod(tmptstar, radistar):
-    
-    fluxbolobbod = [[], []]
-    
-    if tmptstar[1] == 'K' and radistar[1][-6:-2] == 'odot':
-        # Solar value is 3.826e33 erg/s for tmptstar == 5772 and radistar = 1
-        fluxbolobbod[0] = 3.447e18 * tmptstar[0]**4 * radistar[0]**2 # [erg/s]
-        fluxbolobbod[1] = 'erg/s'
-    else:
-        print('')
-        print('')
-        print('')
-        print('tmptstar')
-        print(tmptstar)
-        print('radistar')
-        print(radistar)
-        raise Exception('')
-
-    return fluxbolobbod
-
-
-def retr_blimener(typeband):
-    '''
-    Return an energy gris in electronvolts (eV).
-    '''
-    
-    if typeband == 'AXIS0224':
-        xdat = 'evol'
-        ener = np.logspace(np.log10(200.), np.log10(2400.), 400) # [eV]
-    elif typeband == 'bolo':
-        xdat = 'evol'
-        ener = np.logspace(-5., 6., 1000)
-    else:
-        raise Exception('')
-
-    return ener
-
-
+retr_fluxbolobbod = tdpy.retr_fluxbolobbod
+retr_blimener = tdpy.retr_blimener
 retr_fluxspecbbod = tdpy.retr_fluxspecbbod
 retr_fluxspecbbodener = tdpy.retr_fluxspecbbodener
 retr_fluxspecbbodwlen = tdpy.retr_fluxspecbbodwlen
-
-
-def retr_functran(typeinst, xdat=None):
-    '''
-    Return transmission function
-    '''
-    
-    if xdat is None:
-        if typeinst == 'AXIS':
-            xdat = 'evol'
-            xdat = np.linspace(200., 10000., 1000)
-        else:
-            raise Exception('')
-
-    if typeinst == 'AXIS':
-        functran = np.zeros_like(xdat)
-        indxxdat = np.where((xdat < 10000.) & (xdat > 200.))[0]
-        functran[indxxdat] = 1.
-
-    else:
-        raise Exception('')
-
-    return functran
-
+retr_functran = tdpy.retr_functran
 
 # physics
 retr_vesc = tdpy.retr_vesc
@@ -1962,19 +1609,7 @@ retr_rs2a = tdpy.retr_rs2a
 retr_rsmacomp = tdpy.retr_rsmacomp
 retr_duratranfull = tdpy.retr_duratranfull
 retr_duratrantotl = tdpy.retr_duratrantotl
-
-
-def retr_rflxmodlrise(time, timerise, coeflinerise, coefquadrise):
-    
-    timeoffs = time - timerise
-    indxpost = np.where(timeoffs > 0)[0]
-    dflxrise = np.zeros_like(time)
-    dflxrise[indxpost] = coeflinerise * timeoffs[indxpost] + coefquadrise * timeoffs[indxpost]**2
-    rflx = 1. + dflxrise
-    
-    return rflx, dflxrise
-
-
+retr_rflxmodlrise = tdpy.retr_rflxmodlrise
 retr_rvel = tdpy.retr_rvel
 retr_coeflmdkkipp = quadratic_to_kipping_limb_darkening
 retr_coeflmdkfromkipp = kipping_to_quadratic_limb_darkening
@@ -1982,75 +1617,7 @@ retr_rvelsema = tdpy.retr_rvelsema
 retr_brgtlmdk = tdpy.retr_brgtlmdk
 retr_logg = tdpy.retr_logg
 retr_albg = tdpy.retr_albg
-
-
-def retr_noisphot(magtinpt, strginst, typeoutp='intplite', booldiag=True):
-    '''
-    TESS photometric precision (over what time scale?)
-    ''' 
-    
-    if np.isscalar(magtinpt):
-        #magtinpt = np.array(magtinpt)
-        magtinpt = np.full(1, magtinpt)
-    if isinstance(magtinpt, float):
-        magtinpt = np.array(magtinpt)
-    
-    nois = np.zeros_like(magtinpt) + np.inf
-    
-    if strginst.startswith('LSST'):
-        if strginst.endswith('band'):
-            strgband = strginst[-5]
-        else:
-            strgband = strginst[-1]
-        
-        indx = np.where((magtinpt < 20.) & (magtinpt > 15.))
-        nois[indx] = 0.5 # [ppt over 1 hour]
-        
-        indx = np.where((magtinpt >= 20.) & (magtinpt < 24.))
-        nois[indx] = 0.5 * 10**((0.4 * magtinpt[indx] - 20.) / 3.) # [ppt over 1 hour]
-    
-        indx = np.where(magtinpt >= 24.)
-        nois[indx] = 1000. # [ppt]
-    
-    elif strginst == 'TESS':
-        # interpolate literature values
-        if typeoutp == 'intplite':
-            nois = np.array([40., 40., 40., 90., 200., 700., 3e3, 2e4]) * 1e-3 # [ppt]
-            magt = np.array([ 2.,  4.,  6.,  8.,  10.,  12., 14., 16.])
-            objtspln = scipy.interpolate.interp1d(magt, nois, fill_value='extrapolate')
-            nois = objtspln(magtinpt)
-        elif typeoutp == 'calcspoc':
-            pass
-        else:
-            raise Exception('')
-    elif strginst == 'TESS-GEO-UV':
-        # 200 ppt (limiting magnitude)
-        nois = 200 * 10**(0.4 * (magtinpt - 22.5)) # [ppt over one hour]
-    elif strginst == 'TESS-GEO-VIS':
-        nois = 200 * 10**(0.4 * (magtinpt - 25.0)) # [ppt over one hour]
-    elif strginst == 'ULTRASAT':
-        nois = 200 * 10**(0.4 * (magtinpt - 22.4)) # [ppt over one hour]
-    else:
-        print('')
-        print('')
-        print('')
-        print('strginst')
-        print(strginst)
-        raise Exception('')
-
-    if booldiag:
-        if not np.isfinite(nois).all():
-            print('')
-            print('')
-            print('')
-            print('magtinpt')
-            summgene(magtinpt)
-            print('strginst')
-            print(strginst)
-            print('Magnitude could be saturated.')
-            raise Exception('not np.isfinite(nois).all()')
-
-    return nois
+retr_noisphot = tdpy.retr_noisphot
 
 
 def retr_subp(dictpopl, dictnumbsamp, dictindxsamp, namepoplinit, namepoplfinl, indx):
@@ -2071,18 +1638,7 @@ def retr_subp(dictpopl, dictnumbsamp, dictindxsamp, namepoplinit, namepoplfinl, 
     dictindxsamp[namepoplfinl] = dict()
 
 
-def retr_dictsols():
-    
-    dictsols = dict()
-    dictsols['name'] = ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
-    dictsols['smax'] = [0.3870993, 0.723336, 1., 1.52371, 5.2029, 9.537, 19.189, 30.0699]
-    dictsols['mass'] = [0.05527, 0.81500, 1., 0.10745, 317.83, 95.159, 14.500, 17.204]
-    dictsols['radi'] = [2440, 6052, 6371., 3390, 69911, 58232, 25362, 24622]
-    for name in dictsols:
-        dictsols[name] = np.array(dictsols[name])
-    dictsols['radi'] = dictsols['radi'] / dictsols['radi'][2]
-    
-    return dictsols
+retr_dictsols = tdpy.retr_dictsols
 
 
 def retr_dictpoplstarcomp( \
@@ -3149,67 +2705,11 @@ retr_lcurmodl_flarsing = tdpy.retr_lcurmodl_flarsing
 retr_imfa = tdpy.retr_imfa
 retr_deptbeam = tdpy.retr_deptbeam
 retr_deptelli = tdpy.retr_deptelli
-
-
-def retr_masscomp(amplslen, peri):
-    
-    print('temp: this mass calculation is an approximation.')
-    masscomp = 1e-3 * amplslen / 7.15e-5 / gdat.radistar**(-2.) / peri**(2. / 3.) / (gdat.massstar)**(1. / 3.)
-    
-    return masscomp
-
-
 retr_smaxkepl = tdpy.retr_smaxkepl
 retr_perikepl = tdpy.retr_perikepl
 retr_radiroch = tdpy.retr_radiroch
 retr_radihill = tdpy.retr_radihill
 retr_alphelli = tdpy.retr_alphelli
-
-
-def plot_anim():
-
-    pathbase = str(RepositoryPaths('PEXO_PATH').get_visuals_path()) + os.sep
-    radistar = 0.9
-    
-    booldark = True
-    
-    boolsingside = False
-    boolanim = True
-    listtypevisu = ['real', 'cart']
-    path = pathbase + 'orbt'
-    
-    for a in range(2):
-    
-        radicomp = [1.6, 2.1, 2.7, 3.1]
-        rsmacomp = [0.0895, 0.0647, 0.0375, 0.03043]
-        epoc = [2458572.1128, 2458572.3949, 2458571.3368, 2458586.5677]
-        peri = [3.8, 6.2, 14.2, 19.6]
-        cosi = [0., 0., 0., 0.]
-        
-        if a == 1:
-            radicomp += [2.0]
-            rsmacomp += [0.88 / (215. * 0.1758)]
-            epoc += [2458793.2786]
-            peri += [29.54115]
-            cosi += [0.]
-        
-        for typevisu in listtypevisu:
-            
-            if a == 0:
-                continue
-    
-            pexo.main.plot_orbt( \
-                                path, \
-                                radicomp, \
-                                rsmacomp, \
-                                epoc, \
-                                peri, \
-                                cosi, \
-                                typevisu, \
-                                radistar=radistar, \
-                                boolsingside=boolsingside, \
-                                boolanim=boolanim, \
-                               )
         
 
 
